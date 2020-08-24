@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	RESOURCE_NAME        string = "VeriSilicon.com/solios"
+	RESOURCE_NAME        string = "verisilicon.com/solios"
 	LOCATION             string = "/dev"
 	SOLIOS_SOCKET        string = "solios.sock"
 	SOLIOS_DEVICE_PREFIX string = "transocder"
@@ -190,7 +190,7 @@ func (s *SoliosServer) Allocate(ctx context.Context, reqs *pluginapi.AllocateReq
 		log.Infof("received request: %v", strings.Join(req.DevicesIDs, ","))
 		resp := pluginapi.ContainerAllocateResponse{
 			Envs: map[string]string{
-				"solios_DEVICES": strings.Join(req.DevicesIDs, ","),
+				"SOLIOS_DEVICES": strings.Join(req.DevicesIDs, ","),
 			},
 		}
 		resps.ContainerResponses = append(resps.ContainerResponses, &resp)

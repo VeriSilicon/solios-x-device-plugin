@@ -12,10 +12,10 @@ spec:
       requests:
         memory: "128Mi"
         cpu: "500m"
-        VeriSilicon.com/solios: 1
+        verisilicon.com/solios: 1
       limits:
         memory: "128Mi"
         cpu: "500m"
-        VeriSilicon.com/solios: 1
+        verisilicon.com/solios: 1
     ports:
       - containerPort: 80
