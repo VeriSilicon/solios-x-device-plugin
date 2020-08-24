@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: solios-test-pod
+  labels:
+    name: solios-test-pod
+spec:
+  containers:
+  - name: solios
+    image: verisilicon/solios:0.2
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "500m"
+        VeriSilicon.com/solios: 1
+      limits:
+        memory: "128Mi"
+        cpu: "500m"
+        VeriSilicon.com/solios: 1
+    ports:
+      - containerPort: 80
