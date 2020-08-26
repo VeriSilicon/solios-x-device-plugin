@@ -22,7 +22,7 @@ const (
 	RESOURCE_NAME        string = "verisilicon.com/solios"
 	LOCATION             string = "/dev"
 	SOLIOS_SOCKET        string = "solios.sock"
-	SOLIOS_DEVICE_PREFIX string = "transocder"
+	SOLIOS_DEVICE_PREFIX string = "transcoder"
 	KUBELET_SOCKET       string = "kubelet.sock"
 	DEVICE_PLUG_PATH     string = "/var/lib/kubelet/device-plugins/"
 )
@@ -157,7 +157,7 @@ func (s *SoliosServer) ListAndWatch(e *pluginapi.Empty, srv pluginapi.DevicePlug
 		return err
 	}
 
-	// 更新 device list
+	// update device list
 	for {
 		log.Infoln("waiting for device change")
 		select {
@@ -217,21 +217,14 @@ func (s *SoliosServer) listDevice() error {
 			continue
 		}
 
-		if !strings.HasPrefix(f.Name(), SOLIOS_DEVICE_PREFIX) {
-			continue
+		if strings.HasPrefix(f.Name(), SOLIOS_DEVICE_PREFIX) {
+			s.devices[f.Name()] = &pluginapi.Device{
+				ID:     f.Name(),
+				Health: pluginapi.Healthy,
+			}
+			log.Infof("found device '%s'", f.Name())
 		}
-
-		//get device ID here
-		//str_id := strings.Trim(f.Name(), SOLIOS_DEVICE_PREFIX)
-		//id, err := strconv.ParseInt(str_id, 10, 0)
-
-		s.devices[f.Name()] = &pluginapi.Device{
-			ID:     f.Name(),
-			Health: pluginapi.Healthy,
-		}
-		log.Infof("find device '%s'", f.Name())
 	}
-
 	return nil
 }
 

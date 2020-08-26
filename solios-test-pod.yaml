@@ -6,8 +6,11 @@ metadata:
     name: solios-test-pod
 spec:
   containers:
-  - name: solios
-    image: verisilicon/solios:0.2
+  - name: solios-x
+    image: verisilicon/solios-x:0.3
+    volumeMounts:
+      - name: dev
+        mountPath: /dev
     resources:
       requests:
         memory: "128Mi"
@@ -19,3 +22,11 @@ spec:
         verisilicon.com/solios: 1
     ports:
       - containerPort: 80
+    securityContext:
+          privileged: true #Needed for /dev
+          capabilities:
+            drop: ["ALL"]
+  volumes:
+  - name: dev
+    hostPath:
+        path: /dev
