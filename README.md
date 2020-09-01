@@ -96,7 +96,7 @@ Capacity:
 ## 6. Testing the plugin by Deployment
 
 ```bash
-$ kubectl apply -f solios-x-test-deployment.yaml
+$ kubectl apply -f deployments/solios-x-test-deployment-csd.yaml
 ```
 In this sample YAML file, 10 Solios-X cards will be used hence 10 pods will be created. If you don't have 10 cards installed on your server, please change [replicas] value.
 ```bash
@@ -116,7 +116,7 @@ Furthermore, the deployments `securityContext` must be configured with appropria
 ## 7. Testing the plugin by Pod
 
 ```bash
-$ kubectl apply -f solios-x-test-pod.yaml
+$ kubectl apply -f deployments/solios-x-test-pod-csd.yaml
 ```
 In this sample YAML file, 1 Solios-X cards will be used hence one 1 pods will be created.
 
