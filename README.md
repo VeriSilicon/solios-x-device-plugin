@@ -98,8 +98,18 @@ Capacity:
 ```bash
 $ kubectl apply -f solios-x-test-deployment.yaml
 ```
+In this sample YAML file, 10 Solios-X cards will be used hence 10 pods will be created. If you don't have 10 cards installed on your server, please change [replicas] value.
+```bash
+apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+kind: Deployment
+metadata:
+  name: solios-test-deployment
+spec:
+  replicas: 10
 
-> **Note**: It is also possible to run the GPU device plugin using a non-root user. To do this,
+```
+
+> **Note**: It is also possible to run the Solios-X device plugin using a non-root user. To do this,
 the nodes' DAC rules must be configured to device plugin socket creation and kubelet registration.
 Furthermore, the deployments `securityContext` must be configured with appropriate `runAsUser/runAsGroup`.
 
@@ -108,7 +118,8 @@ Furthermore, the deployments `securityContext` must be configured with appropria
 ```bash
 $ kubectl apply -f solios-x-test-pod.yaml
 ```
+In this sample YAML file, 1 Solios-X cards will be used hence one 1 pods will be created.
 
-> **Note**: It is also possible to run the GPU device plugin using a non-root user. To do this,
+> **Note**: It is also possible to run the Solios-X device plugin using a non-root user. To do this,
 the nodes' DAC rules must be configured to device plugin socket creation and kubelet registration.
 Furthermore, the deployments `securityContext` must be configured with appropriate `runAsUser/runAsGroup`.
