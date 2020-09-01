@@ -18,8 +18,9 @@ spec:
       - key: CriticalAddonsOnly
         operator: Exists
       containers:
-      - image: verisilicon/solios-x-device-plugin:0.4
+      - image: verisilicon/solios-x-device-plugin:0.5
         name: solios-x-device-plugin
+        imagePullPolicy: IfNotPresent
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:

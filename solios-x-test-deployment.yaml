@@ -1,0 +1,44 @@
+apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+kind: Deployment
+metadata:
+  name: solios-test-deployment
+spec:
+  replicas: 10
+  selector:
+    matchLabels:
+      app: solios-test-pod
+  template:
+    metadata:
+      labels:
+        app: solios-test-pod
+    spec:
+      containers:
+      - name: solios-x
+        image: verisilicon/solios-x:1.0
+        ports:
+        - containerPort: 80
+        volumeMounts:
+          - name: dev
+            mountPath: /dev
+          - name: sys
+            mountPath: /sys
+          - name: hugepage
+            mountPath: /hugepages 
+        resources:
+          requests:
+            verisilicon.com/solios: 1
+          limits:
+            memory: "500Mi"
+            hugepages-2Mi: 1024Mi
+            cpu: 4
+            verisilicon.com/solios: 1      
+      volumes:
+      - name: dev
+        hostPath:
+            path: /dev
+      - name: sys
+        hostPath:
+            path: /sys
+      - name: hugepage
+        emptyDir:
+          medium: HugePages                    

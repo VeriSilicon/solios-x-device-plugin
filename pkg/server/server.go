@@ -193,6 +193,13 @@ func (s *SoliosServer) Allocate(ctx context.Context, reqs *pluginapi.AllocateReq
 				"SOLIOS_DEVICES": strings.Join(req.DevicesIDs, ","),
 			},
 		}
+		resp.Devices = []*pluginapi.DeviceSpec{
+			&pluginapi.DeviceSpec{
+				ContainerPath: "/dev/transcoder0",
+				HostPath:      "/dev/transcoder0",
+				Permissions:   "rwm",
+			},
+		}
 		resps.ContainerResponses = append(resps.ContainerResponses, &resp)
 	}
 	return resps, nil
