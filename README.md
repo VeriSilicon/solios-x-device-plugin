@@ -93,7 +93,7 @@ Capacity:
 
 ```
 
-## Testing the plugin by Deployment
+## 6. Testing the plugin by Deployment
 
 ```bash
 $ kubectl apply -f solios-x-test-deployment.yaml
@@ -103,7 +103,7 @@ $ kubectl apply -f solios-x-test-deployment.yaml
 the nodes' DAC rules must be configured to device plugin socket creation and kubelet registration.
 Furthermore, the deployments `securityContext` must be configured with appropriate `runAsUser/runAsGroup`.
 
-## Testing the plugin by Pod
+## 7. Testing the plugin by Pod
 
 ```bash
 $ kubectl apply -f solios-x-test-pod.yaml
