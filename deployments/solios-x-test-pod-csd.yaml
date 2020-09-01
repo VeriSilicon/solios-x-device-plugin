@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: solios-test-pod
+  labels:
+    name: solios-test-pod
+spec:
+  containers:
+  - name: solios-x
+    image: verisilicon/solios-x:csd_0.3
+    imagePullPolicy: IfNotPresent 
+    volumeMounts:
+      - name: dev
+        mountPath: /dev
+      - name: sys
+        mountPath: /sys
+      - name: hugepage
+        mountPath: /hugepages 
+    resources:
+      requests:
+        verisilicon.com/solios: 1
+      limits:
+        memory: "500Mi"
+        hugepages-2Mi: 1024Mi
+        cpu: 4
+        verisilicon.com/solios: 1
+    ports:
+      - containerPort: 80
+    securityContext:
+          privileged: true #Needed for /dev and /sys
+    env:
+      - name: SOLIOS_POD_IP
+        valueFrom:
+           fieldRef:
+              fieldPath: status.podIP
+  volumes:
+  - name: dev
+    hostPath:
+        path: /dev
+  - name: sys
+    hostPath:
+        path: /sys
+  - name: hugepage
+    emptyDir:
+      medium: HugePages
