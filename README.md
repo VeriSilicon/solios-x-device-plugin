@@ -1,4 +1,4 @@
-# Intel GPU device plugin for Kubernetes
+# VeriSilicon Solios-X device plugin for Kubernetes
 
 # Table of Contents
 
