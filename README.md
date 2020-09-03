@@ -99,17 +99,23 @@ spec:
 
 ```
 
-> **Note**: It is also possible to run the Solios-X device plugin using a non-root user. To do this,
-the nodes' DAC rules must be configured to device plugin socket creation and kubelet registration.
-Furthermore, the deployments `securityContext` must be configured with appropriate `runAsUser/runAsGroup`.
-
 ## 6. Testing the plugin by Pod
 
 ```bash
 $ kubectl apply -f deployments/solios-x-test-pod-csd.yaml
 ```
 In this sample YAML file, 1 Solios-X cards will be used hence one 1 pods will be created.
+If you's like to select multiple cards in one pod, you can change verisilicon.com/solios: values from 1 to others.
 
-> **Note**: It is also possible to run the Solios-X device plugin using a non-root user. To do this,
-the nodes' DAC rules must be configured to device plugin socket creation and kubelet registration.
-Furthermore, the deployments `securityContext` must be configured with appropriate `runAsUser/runAsGroup`.
+In below example, 2 Solios-x cards will be selected in one pods:
+
+```bash
+    resources:
+      requests:
+        verisilicon.com/solios: 2
+      limits:
+        memory: "500Mi"
+        hugepages-2Mi: 1024Mi
+        cpu: 4
+        verisilicon.com/solios: 2
+```
