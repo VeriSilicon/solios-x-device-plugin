@@ -180,34 +180,26 @@ func (s *SoliosServer) ListAndWatch(e *pluginapi.Empty, srv pluginapi.DevicePlug
 	}
 }
 
-// Allocate is called during container creation so that the Device
-// Plugin can run device specific operations and instruct Kubelet
-// of the steps to make the Device available in the container
 func (s *SoliosServer) Allocate(ctx context.Context, reqs *pluginapi.AllocateRequest) (*pluginapi.AllocateResponse, error) {
-	log.Infoln("Allocate called")
+	log.Infoln("Allocate was called")
 	resps := &pluginapi.AllocateResponse{}
+
 	for _, req := range reqs.ContainerRequests {
 		log.Infof("received request: %v", strings.Join(req.DevicesIDs, ","))
-		resp := pluginapi.ContainerAllocateResponse{
-			Envs: map[string]string{
-				"SOLIOS_DEVICES": strings.Join(req.DevicesIDs, ","),
-			},
-		}
-		resp.Devices = []*pluginapi.DeviceSpec{
-			&pluginapi.DeviceSpec{
-				ContainerPath: "/dev/transcoder0",
-				HostPath:      "/dev/transcoder0",
+		rsp := pluginapi.ContainerAllocateResponse{}
+		for _, devname := range req.DevicesIDs {
+			rsp.Devices = append(rsp.Devices, &pluginapi.DeviceSpec{
+				HostPath:      "/dev/" + devname,
+				ContainerPath: "/dev/" + devname,
 				Permissions:   "rwm",
-			},
+			})
+			log.Infof("Added device: %v", devname)
 		}
-		resps.ContainerResponses = append(resps.ContainerResponses, &resp)
+		resps.ContainerResponses = append(resps.ContainerResponses, &rsp)
 	}
 	return resps, nil
 }
 
-// PreStartContainer is called, if indicated by Device Plugin during registeration phase,
-// before each container start. Device plugin can run device specific operations
-// such as reseting the device before making devices available to the container
 func (s *SoliosServer) PreStartContainer(ctx context.Context, req *pluginapi.PreStartContainerRequest) (*pluginapi.PreStartContainerResponse, error) {
 	log.Infoln("PreStartContainer called")
 	return &pluginapi.PreStartContainerResponse{}, nil

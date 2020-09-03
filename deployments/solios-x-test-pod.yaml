@@ -7,11 +7,9 @@ metadata:
 spec:
   containers:
   - name: solios-x
-    image: verisilicon/solios-x:1.0
+    image: verisilicon/solios-x:1.1
     imagePullPolicy: IfNotPresent 
     volumeMounts:
-      - name: dev
-        mountPath: /dev
       - name: sys
         mountPath: /sys
       - name: hugepage
@@ -27,16 +25,13 @@ spec:
     ports:
       - containerPort: 80
     securityContext:
-          privileged: true #Needed for /dev and /sys
+          privileged: false
     env:
       - name: SOLIOS_POD_IP
         valueFrom:
            fieldRef:
               fieldPath: status.podIP
   volumes:
-  - name: dev
-    hostPath:
-        path: /dev
   - name: sys
     hostPath:
         path: /sys

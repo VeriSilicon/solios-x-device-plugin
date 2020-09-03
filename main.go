@@ -38,7 +38,6 @@ func main() {
 	for {
 		select {
 		case event := <-watcher.Events:
-			log.Infof("watch kubelet events: %s, event name: %s, isCreate: %v", event.Op.String(), event.Name, event.Op&fsnotify.Create == fsnotify.Create)
 			if event.Name == devicePluginSocket && event.Op&fsnotify.Create == fsnotify.Create {
 				time.Sleep(time.Second)
 				log.Fatalf("inotify: %s created, restarting.", devicePluginSocket)

@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: solios-test-deployment
 spec:
-  replicas: 10
+  replicas: 5
   selector:
     matchLabels:
       app: solios-test-pod
@@ -14,12 +14,10 @@ spec:
     spec:
       containers:
       - name: solios-x
-        image: verisilicon/solios-x:1.0
+        image: verisilicon/solios-x:latest
         ports:
         - containerPort: 80
         volumeMounts:
-          - name: dev
-            mountPath: /dev
           - name: sys
             mountPath: /sys
           - name: hugepage
@@ -33,9 +31,6 @@ spec:
             cpu: 4
             verisilicon.com/solios: 1      
       volumes:
-      - name: dev
-        hostPath:
-            path: /dev
       - name: sys
         hostPath:
             path: /sys
