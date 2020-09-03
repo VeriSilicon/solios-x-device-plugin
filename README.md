@@ -25,19 +25,9 @@ The following sections detail how to obtain, build, deploy and test the Solios-X
 
 Examples are provided showing how to deploy the plugin either using a DaemonSet or by hand on a per-node basis.
 
-## 1. Getting the source code
+## 1. Verify node kubelet config
 
-> **Note:** It is presumed you have a valid and configured [golang](https://golang.org/) environment
-> that meets the minimum required version.
-
-```bash
-$ mkdir -p $(go env GOPATH)/src/github.com/intel
-$ git clone https://github.com/intel/intel-device-plugins-for-kubernetes $(go env GOPATH)/src/github.com/intel/intel-device-plugins-for-kubernetes
-```
-
-## 2. Verify node kubelet config
-
-Every node that will be running the gpu plugin must have the
+Every node that will be running the Solios-X plugin must have the
 [kubelet device-plugins](https://kubernetes.io/docs/concepts/extend-kubernetes/compute-storage-net/device-plugins/)
 configured. For each node, check that the kubelet device plugin socket exists:
 
@@ -46,7 +36,7 @@ $ ls /var/lib/kubelet/device-plugins/kubelet.sock
 /var/lib/kubelet/device-plugins/kubelet.sock
 ```
 
-## 3. Get Solios-X device plugin source code:
+## 2. Get Solios-X device plugin source code:
 
 ```bash
 $ git clone git@github.com:VeriSilicon/solios-x-device-plugin.git
@@ -59,13 +49,13 @@ remote: Total 48 (delta 10), reused 47 (delta 9), pack-reused 0
 Resolving deltas: 100% (10/10), done.
 ```
 
-## 4. Deploy plugin DaemonSet
+## 3. Deploy plugin DaemonSet
 
 ```bash
 $ kubectl apply -f solios-x-device-plugin.yaml
 ```
 
-## 5. Label your server:
+## 4. Label your server:
 
 ```bash
 $ kubectl label nodes [NODE NAME] solios-device=enable
@@ -93,7 +83,7 @@ Capacity:
 
 ```
 
-## 6. Testing the plugin by Deployment
+## 5. Testing the plugin by Deployment
 
 ```bash
 $ kubectl apply -f deployments/solios-x-test-deployment-csd.yaml
@@ -113,7 +103,7 @@ spec:
 the nodes' DAC rules must be configured to device plugin socket creation and kubelet registration.
 Furthermore, the deployments `securityContext` must be configured with appropriate `runAsUser/runAsGroup`.
 
-## 7. Testing the plugin by Pod
+## 6. Testing the plugin by Pod
 
 ```bash
 $ kubectl apply -f deployments/solios-x-test-pod-csd.yaml
