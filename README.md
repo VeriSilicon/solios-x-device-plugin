@@ -95,10 +95,52 @@ kind: Deployment
 metadata:
   name: solios-test-deployment
 spec:
-  replicas: 10
+  replicas: 5
 
 ```
 
+check pod status:
+```bash
+$kubectl get pods
+NAME                                      READY   STATUS    RESTARTS   AGE
+solios-test-deployment-574d464658-d79q9   1/1     Running   0          111s
+solios-test-deployment-574d464658-n42w9   1/1     Running   0          111s
+solios-test-deployment-574d464658-x2fsl   1/1     Running   0          111s
+solios-test-deployment-574d464658-znv8z   1/1     Running   0          111s
+solios-test-deployment-574d464658-zpj9b   1/1     Running   0          111s
+```
+
+check one pod log:
+```bash
+$kubectl logs solios-test-deployment-574d464658-d79q9
+found device  /dev/transcoder2
+POD  Doing transcoding...device=/dev/transcoder2, count = 1, output_file = output0_.h264
+ffmpeg version N-98227-g45bddede35 Copyright (c) 2000-2020 the FFmpeg developers
+  built with gcc 4.8.5 (GCC) 20150623 (Red Hat 4.8.5-39)
+  configuration: --enable-vpe --extra-ldflags=-L/lib/vpe --extra-libs=-lvpi --disable-sdl2 --disable-libxcb --disable-libxcb-shm --disable-libxcb-xfixes --disable-libxcb-shape --disable-xlib --disable-libmfx --disable-vaapi
+  libavutil      56. 55.100 / 56. 55.100
+  libavcodec     58. 92.100 / 58. 92.100
+  libavformat    58. 46.101 / 58. 46.101
+  libavdevice    58. 11.100 / 58. 11.100
+  libavfilter     7. 86.100 /  7. 86.100
+  libswscale      5.  8.100 /  5.  8.100
+  libswresample   3.  8.100 /  3.  8.100
+[h264 @ 0x3f9ce40] Stream #0: not enough frames to estimate rate; consider increasing probesize
+Input #0, h264, from 'test1080p.h264':
+  Duration: N/A, bitrate: N/A
+    Stream #0:0: Video: h264 (Main), yuv420p(tv, bt709, progressive), 1920x1080, 29.97 fps, 29.97 tbr, 1200k tbn, 59.94 tbc
+Stream mapping:
+  Stream #0:0 (h264_vpe) -> spliter_vpe
+  spliter_vpe -> Stream #0:0 (h264enc_vpe)
+Press [q] to stop, [?] for help
+Output #0, h264, to 'output0_.h264':
+  Metadata:
+    encoder         : Lavf58.46.101
+    Stream #0:0: Video: h264 (h264enc_vpe), vpe, 1920x1080, q=2-31, 10000 kb/s, 29.97 fps, 29.97 tbn, 29.97 tbc
+    Metadata:
+      encoder         : Lavc58.92.100 h264enc_vpe
+frame=  300 fps=175 q=-0.0 Lsize=   12020kB time=00:00:09.74 bitrate=10106.9kbits/s speed=5.69x
+```
 ## 6. Testing the plugin by Pod
 
 ```bash
@@ -118,4 +160,52 @@ In below example, 2 Solios-x cards will be selected in one pods:
         hugepages-2Mi: 1024Mi
         cpu: 4
         verisilicon.com/solios: 2
+```
+Check the pod log:
+```bash
+$kubectl logs solios-test-pod
+found device  /dev/transcoder7
+POD 10.244.0.121 Doing transcoding...count = 1, output_file = output0_10.244.0.121.h264
+ffmpeg version N-98227-g45bddede35 Copyright (c) 2000-2020 the FFmpeg developers
+  built with gcc 4.8.5 (GCC) 20150623 (Red Hat 4.8.5-39)
+  configuration: --enable-vpe --extra-ldflags=-L/lib/vpe --extra-libs=-lvpi --disable-sdl2 --disable-libxcb --disable-libxcb-shm --disable-libxcb-xfixes --disable-libxcb-shape --disable-xlib --disable-libmfx --disable-vaapi
+  libavutil      56. 55.100 / 56. 55.100
+  libavcodec     58. 92.100 / 58. 92.100
+  libavformat    58. 46.101 / 58. 46.101
+  libavdevice    58. 11.100 / 58. 11.100
+  libavfilter     7. 86.100 /  7. 86.100
+  libswscale      5.  8.100 /  5.  8.100
+  libswresample   3.  8.100 /  3.  8.100
+[h264 @ 0x257ae40] Stream #0: not enough frames to estimate rate; consider increasing probesize
+Input #0, h264, from 'test1080p.h264':
+  Duration: N/A, bitrate: N/A
+    Stream #0:0: Video: h264 (Main), yuv420p(tv, bt709, progressive), 1920x1080, 29.97 fps, 29.97 tbr, 1200k tbn, 59.94 tbc
+Stream mapping:
+  Stream #0:0 (h264_vpe) -> spliter_vpe
+  spliter_vpe -> Stream #0:0 (h264enc_vpe)
+Press [q] to stop, [?] for help
+Output #0, h264, to 'output0_10.244.0.121.h264':
+  Metadata:
+    encoder         : Lavf58.46.101
+    Stream #0:0: Video: h264 (h264enc_vpe), vpe, 1920x1080, q=2-31, 10000 kb/s, 29.97 fps, 29.97 tbn, 29.97 tbc
+    Metadata:
+      encoder         : Lavc58.92.100 h264enc_vpe
+frame=  300 fps=181 q=-0.0 Lsize=   12020kB time=00:00:09.74 bitrate=10106.9kbits/s speed=5.88x
+video:12020kB audio:0kB subtitle:0kB other streams:0kB global headers:0kB muxing overhead: 0.000000%
+(null)[-1][9][9][L6][Trans_mem]TransCheckMemLeakInit(91): init_trans_memory test
+(null)[07][9][9][L6][TRANS_FD]TranscodeOpenFD(104): fd opend 3
+log_filename vpi_20200903_044946.log
+log info send to syslog
+system[07][9][9][L4][DECDWL0]dechw_c0 count: 161, total: 1119707, 6954 pertime
+system[07][9][9][L4][DECDWL0]dechw_c1 count: 107, total: 739606, 6912 pertime
+system[07][9][9][L4][DECDWL0]dechw_c2 count: 27, total: 186086, 6892 pertime
+system[07][9][9][L4][DECDWL0]dechw_c3 count: 5, total: 35422, 7084 pertime
+system[07][9][9][L4][DECDWL0]dechw count: 77, total: 1428861, 18556 pertime
+system[07][9][9][L4][H264ENC]vcehwp1 count: 0, total: 0, 0 pertime
+system[07][9][9][L4][H264ENC]vcehw count: 300, total: 1095228, 3650 pertime
+system[07][9][9][L4][H264ENC]CU_ANAL count: 0, total: 0, 0 pertime
+system[07][9][9][L4][H264ENC]vcehw_total count: 300, total: 1096033, 3653 pertime
+system[07][9][9][L4][H264ENC]vce_total count: 300, total: 1247043, 4156 pertime
+Round 1 finished, now start next...
+
 ```
