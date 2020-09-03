@@ -60,7 +60,7 @@ $ kubectl apply -f solios-x-device-plugin.yaml
 ```bash
 $ kubectl label nodes [NODE NAME] solios-device=enable
 ```
-After step 5, you will able to find the verisilicon.com/solios resources already been reported by plugin if everything went smooth:
+After this step, you will able to find the verisilicon.com/solios resources already been reported by plugin if everything went smooth:
 ```bash
 $ kubectl describe nodes vsi
 Name:               vsi
