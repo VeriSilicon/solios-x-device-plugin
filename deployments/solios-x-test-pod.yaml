@@ -7,13 +7,13 @@ metadata:
 spec:
   containers:
   - name: solios-x
-    image: verisilicon/solios-x:1.1
-    imagePullPolicy: IfNotPresent 
+    image: verisilicon/solios-x:latest
+    imagePullPolicy: IfNotPresent
     volumeMounts:
       - name: sys
         mountPath: /sys
       - name: hugepage
-        mountPath: /hugepages 
+        mountPath: /hugepages
     resources:
       requests:
         verisilicon.com/solios: 1
@@ -24,8 +24,6 @@ spec:
         verisilicon.com/solios: 1
     ports:
       - containerPort: 80
-    securityContext:
-          privileged: false
     env:
       - name: SOLIOS_POD_IP
         valueFrom:

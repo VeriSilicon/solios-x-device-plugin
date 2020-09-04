@@ -21,7 +21,7 @@ spec:
           - name: sys
             mountPath: /sys
           - name: hugepage
-            mountPath: /hugepages 
+            mountPath: /hugepages
         resources:
           requests:
             verisilicon.com/solios: 1
@@ -29,11 +29,11 @@ spec:
             memory: "500Mi"
             hugepages-2Mi: 1024Mi
             cpu: 4
-            verisilicon.com/solios: 1      
+            verisilicon.com/solios: 1
       volumes:
       - name: sys
         hostPath:
             path: /sys
       - name: hugepage
         emptyDir:
-          medium: HugePages                    
+          medium: HugePages
