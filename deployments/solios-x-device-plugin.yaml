@@ -22,13 +22,10 @@ spec:
         name: solios-x-device-plugin
         imagePullPolicy: IfNotPresent
         securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop: ["ALL"]
+          readOnlyRootFilesystem: true
         volumeMounts:
         - name: devfs
           mountPath: /dev
-          readOnly: true
         - name: kubeletsockets
           mountPath: /var/lib/kubelet/device-plugins
       volumes:
