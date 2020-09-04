@@ -16,12 +16,12 @@ spec:
         mountPath: /hugepages 
     resources:
       requests:
-        verisilicon.com/solios: 1
+        verisilicon.com/solios: 2
       limits:
         memory: "500Mi"
         hugepages-2Mi: 1024Mi
         cpu: 4
-        verisilicon.com/solios: 1
+        verisilicon.com/solios: 2
     ports:
       - containerPort: 80
     env:
