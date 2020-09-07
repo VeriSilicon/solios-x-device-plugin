@@ -36,26 +36,13 @@ $ ls /var/lib/kubelet/device-plugins/kubelet.sock
 /var/lib/kubelet/device-plugins/kubelet.sock
 ```
 
-## 2. Get Solios-X device plugin source code:
+## 2. Deploy plugin DaemonSet
 
 ```bash
-$ git clone git@github.com:VeriSilicon/solios-x-device-plugin.git
-Cloning into 'solios-x-device-plugin'...
-remote: Enumerating objects: 48, done.
-remote: Counting objects: 100% (48/48), done.
-remote: Compressing objects: 100% (27/27), done.
-Receiving objects: 100% (48/48), 30.90 KiB | 179.00 KiB/s, done.
-remote: Total 48 (delta 10), reused 47 (delta 9), pack-reused 0
-Resolving deltas: 100% (10/10), done.
+$ kubectl apply -f https://github.com/VeriSilicon/solios-x-device-plugin/blob/master/deployments/solios-x-device-plugin.yaml
 ```
 
-## 3. Deploy plugin DaemonSet
-
-```bash
-$ kubectl apply -f solios-x-device-plugin.yaml
-```
-
-## 4. Label your server:
+## 3. Label your server:
 
 ```bash
 $ kubectl label nodes [NODE NAME] solios-device=enable
@@ -83,10 +70,10 @@ Capacity:
 
 ```
 
-## 5. Testing the plugin by Deployment
+## 4. Testing the plugin by Deployment
 
 ```bash
-$ kubectl apply -f deployments/solios-x-test-deployment-csd.yaml
+$ kubectl apply -f https://github.com/VeriSilicon/solios-x-device-plugin/blob/master/deployments/solios-x-test-deployment-csd.yaml
 ```
 In this sample YAML file, 5 Solios-X cards will be used hence 5 pods will be created. If you don't have 10 cards installed on your server, please change [replicas] value.
 The sample pod will select one /dev/transcoder device and do H264->H264 transcoding job repeatedly(10 times).
@@ -142,10 +129,10 @@ Output #0, h264, to 'output0_.h264':
       encoder         : Lavc58.92.100 h264enc_vpe
 frame=  300 fps=175 q=-0.0 Lsize=   12020kB time=00:00:09.74 bitrate=10106.9kbits/s speed=5.69x
 ```
-## 6. Testing the plugin by Pod
+## 5. Testing the plugin by Pod
 
 ```bash
-$ kubectl apply -f deployments/solios-x-test-pod-csd.yaml
+$ kubectl apply -f https://github.com/VeriSilicon/solios-x-device-plugin/blob/master/deployments/solios-x-test-pod-csd.yaml
 ```
 In this sample YAML file, 1 Solios-X cards will be used hence one 1 pods will be created.
 The sample pod will select one /dev/transcoder device and do H264->H264 transcoding job repeatedly(10 times).
