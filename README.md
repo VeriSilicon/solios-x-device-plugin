@@ -39,7 +39,7 @@ $ ls /var/lib/kubelet/device-plugins/kubelet.sock
 ## 2. Deploy plugin DaemonSet
 
 ```bash
-$ kubectl apply -f https://github.com/VeriSilicon/solios-x-device-plugin/blob/master/deployments/solios-x-device-plugin.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/VeriSilicon/solios-x-device-plugin/master/deployments/solios-x-device-plugin.yaml
 ```
 
 ## 3. Label your server:
@@ -73,7 +73,7 @@ Capacity:
 ## 4. Testing the plugin by Deployment
 
 ```bash
-$ kubectl apply -f https://github.com/VeriSilicon/solios-x-device-plugin/blob/master/deployments/solios-x-test-deployment-csd.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/VeriSilicon/solios-x-device-plugin/master/deployments/solios-x-test-deployment-csd.yaml
 ```
 In this sample YAML file, 5 Solios-X cards will be used hence 5 pods will be created. If you don't have 10 cards installed on your server, please change [replicas] value.
 The sample pod will select one /dev/transcoder device and do H264->H264 transcoding job repeatedly(10 times).
@@ -132,7 +132,7 @@ frame=  300 fps=175 q=-0.0 Lsize=   12020kB time=00:00:09.74 bitrate=10106.9kbit
 ## 5. Testing the plugin by Pod
 
 ```bash
-$ kubectl apply -f https://github.com/VeriSilicon/solios-x-device-plugin/blob/master/deployments/solios-x-test-pod-csd.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/VeriSilicon/solios-x-device-plugin/master/deployments/solios-x-test-pod-csd.yaml
 ```
 In this sample YAML file, 1 Solios-X cards will be used hence one 1 pods will be created.
 The sample pod will select one /dev/transcoder device and do H264->H264 transcoding job repeatedly(10 times).
