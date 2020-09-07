@@ -44,12 +44,14 @@ $ kubectl apply -f https://raw.githubusercontent.com/VeriSilicon/solios-x-device
 
 ## 3. Label your server:
 
+Please change [NODE NAME] to your node name. you can use "kubectl get nodes" to get you node name.
+
 ```bash
 $ kubectl label nodes [NODE NAME] solios-device=enable
 ```
 After this step, you will able to find the verisilicon.com/solios resources already been reported by plugin if everything went smooth:
 ```bash
-$ kubectl describe nodes vsi
+$ kubectl describe nodes [NODE NAME]
 Name:               vsi
 Roles:              <none>
 Labels:             kubernetes.io/arch=amd64
@@ -129,6 +131,13 @@ Output #0, h264, to 'output0_.h264':
       encoder         : Lavc58.92.100 h264enc_vpe
 frame=  300 fps=175 q=-0.0 Lsize=   12020kB time=00:00:09.74 bitrate=10106.9kbits/s speed=5.69x
 ```
+
+Delete the Deployment:
+```bash
+$kubectl delete -f https://raw.githubusercontent.com/VeriSilicon/solios-x-device-plugin/master/deployments/solios-x-test-deployment-csd.yaml
+deployment.apps "solios-test-deployment" deleted
+```
+
 ## 5. Testing the plugin by Pod
 
 ```bash
@@ -197,4 +206,9 @@ system[07][9][9][L4][H264ENC]vcehw_total count: 300, total: 1096033, 3653 pertim
 system[07][9][9][L4][H264ENC]vce_total count: 300, total: 1247043, 4156 pertime
 Round 1 finished, now start next...
 
+```
+Delete the Pod:
+```bash
+$kubectl delete -f https://raw.githubusercontent.com/VeriSilicon/solios-x-device-plugin/master/deployments/solios-x-test-pod-csd.yaml
+deployment.apps "solios-test-pod-csd" deleted
 ```
