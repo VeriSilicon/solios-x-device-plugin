@@ -89,7 +89,7 @@ Capacity:
 $ kubectl apply -f deployments/solios-x-test-deployment-csd.yaml
 ```
 In this sample YAML file, 5 Solios-X cards will be used hence 5 pods will be created. If you don't have 10 cards installed on your server, please change [replicas] value.
-The sample pod will select one /dev/transcoder device and do H264->H264 transcoding job repeatly(10 times).
+The sample pod will select one /dev/transcoder device and do H264->H264 transcoding job repeatedly(10 times).
 ```bash
 apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
 kind: Deployment
@@ -148,7 +148,7 @@ frame=  300 fps=175 q=-0.0 Lsize=   12020kB time=00:00:09.74 bitrate=10106.9kbit
 $ kubectl apply -f deployments/solios-x-test-pod-csd.yaml
 ```
 In this sample YAML file, 1 Solios-X cards will be used hence one 1 pods will be created.
-The sample pod will select one /dev/transcoder device and do H264->H264 transcoding job repeatly(10 times).
+The sample pod will select one /dev/transcoder device and do H264->H264 transcoding job repeatedly(10 times).
 
 If you's like to select multiple cards in one pod, you can change verisilicon.com/solios: values from 1 to others.
 In below example, 2 Solios-x cards will be selected in one pods:
