@@ -1,4 +1,4 @@
-# VPE description
+# 1. VPE description
 
 VeriSilicon Platform Engine(VPE for short) consists of VeriSilicon Platform Interfaces (VPI for short) and SDK. It is the control software for VeriSilicon SoC platforms and separate IPs. Here VPI provides the APIs for VeriSilicon Video encoding and decoding functions, the details are below:
 
@@ -31,13 +31,13 @@ VeriSilicon Platform Engine(VPE for short) consists of VeriSilicon Platform Inte
           Download/Downscale/Format conversion
 
 
-# VPE Plugin description
+# 2. VPE Plugin description
 
 VPE Plugin is for the multimedia frameworks to enable video transcoding, encoding,
 decoding and processing with VeriSilicon Platform Engine.
 Here VPE Plugin for FFmpeg is supported and to be extended to GStreamer and others.
 
-# The overall architecture:
+# 3. The overall architecture:
      +----------------------------------------+
      |              |              |          |
      |  FFmpeg      |  GStreamer   |   APP    |
@@ -70,7 +70,7 @@ Here VPE Plugin for FFmpeg is supported and to be extended to GStreamer and othe
      |                                        |
      +----------------------------------------+
 
-# VPI directory
+# 4. VPI directory
 ```
 ├── build                         Configure files for building
 ├── doc                           Documentations
@@ -95,7 +95,7 @@ Here VPE Plugin for FFmpeg is supported and to be extended to GStreamer and othe
 
 ```
 
-# Build and install VPE
+# 5. Build and install VPE
 
 1. Build
 ```bash
