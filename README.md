@@ -3,17 +3,12 @@
 # Table of Contents
 
 * [Introduction](#introduction)
-* [Installation](#installation)
-    * [Getting the source code](#getting-the-source-code)
-    * [Verify node kubelet config](#verify-node-kubelet-config)
-    * [Deploying as a DaemonSet](#deploying-as-a-daemonset)
-        * [Build the plugin image](#build-the-plugin-image)
-        * [Deploy plugin DaemonSet](#deploy-plugin-daemonset)
-    * [Deploy by hand](#deploy-by-hand)
-        * [Build the plugin](#build-the-plugin)
-        * [Run the plugin as administrator](#run-the-plugin-as-administrator)
-    * [Verify plugin registration](#verify-plugin-registration)
-    * [Testing the plugin](#testing-the-plugin)
+* [Verify node kubelet config](#Verify-node-kubelet-config)
+* [Install Solios-X driver](#Install-Solios-X-driver)
+* [Deploy plugin DaemonSet](#Deploy-plugin-DaemonSet)
+* [Label your server](#Label-your-server)
+* [Testing the plugin by Deployment](#Testing-the-plugin-by-Deployment)
+* [Or Testing the plugin by Pod](#Or-Testing-the-plugin-by-Pod)
 
 # Introduction
 
@@ -21,7 +16,7 @@ The Solios-X device plugin for Kubernetes supports acceleration using VeriSilico
 The following sections detail how to obtain, build, deploy and test the Solios-X device plugin.
 Examples are provided showing how to deploy the plugin, and test the plugin by POD and Deployment.
 
-## 1. Verify node kubelet config
+## Verify node kubelet config
 
 Every node that will be running the Solios-X plugin must have the
 [kubelet device-plugins](https://kubernetes.io/docs/concepts/extend-kubernetes/compute-storage-net/device-plugins/)
@@ -32,20 +27,20 @@ $ ls /var/lib/kubelet/device-plugins/kubelet.sock
 /var/lib/kubelet/device-plugins/kubelet.sock
 ```
 
-## 2. Install Solios-X driver
+## Install Solios-X driver
 Please Make sure to install Solios-X driver on your server, you can follow https://github.com/VeriSilicon/vpe/blob/vs_develop/readme.md to make and install Solios-X driver.
 After the driver is installed, please double check whether device nodes /dev/transcoderxx are available. If 
 /dev/transcoderxx are available then it means driver was installed successfully.
 
 If your driver was already installed, please skip this step.
 
-## 3. Deploy plugin DaemonSet
+## Deploy plugin DaemonSet
 
 ```bash
 $ kubectl apply -f https://raw.githubusercontent.com/VeriSilicon/solios-x-device-plugin/master/deployments/solios-x-device-plugin.yaml
 ```
 
-## 4. Label your server:
+## Label your server
 
 Please change [NODE NAME] to your node name. you can use "kubectl get nodes" to get you node name.
 
@@ -74,7 +69,7 @@ Capacity:
 
 ```
 
-## 5. Testing the plugin by Deployment
+## Testing the plugin by Deployment
 
 ```bash
 $ kubectl apply -f https://raw.githubusercontent.com/VeriSilicon/solios-x-device-plugin/master/deployments/solios-x-test-deployment-csd.yaml
@@ -140,7 +135,7 @@ $kubectl delete -f https://raw.githubusercontent.com/VeriSilicon/solios-x-device
 deployment.apps "solios-test-deployment" deleted
 ```
 
-## 6. Testing the plugin by Pod
+## Or Testing the plugin by Pod
 
 ```bash
 $ kubectl apply -f https://raw.githubusercontent.com/VeriSilicon/solios-x-device-plugin/master/deployments/solios-x-test-pod-csd.yaml
