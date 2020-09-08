@@ -18,12 +18,8 @@
 # Introduction
 
 The Solios-X device plugin for Kubernetes supports acceleration using VeriSilicon Solios-X solution.
-
-# Installation
-
 The following sections detail how to obtain, build, deploy and test the Solios-X device plugin.
-
-Examples are provided showing how to deploy the plugin either using a DaemonSet or by hand on a per-node basis.
+Examples are provided showing how to deploy the plugin, and test the plugin by POD and Deployment.
 
 ## 1. Verify node kubelet config
 
