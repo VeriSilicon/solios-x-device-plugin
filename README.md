@@ -55,8 +55,7 @@ $ kubectl label nodes [NODE NAME] solios-device=enable
 After this step, you will able to find the verisilicon.com/solios resources already been reported by plugin if everything went smooth:
 ```bash
 $ kubectl describe nodes [NODE NAME]
-Name:               vsi
-Roles:              <none>
+...
 Labels:             kubernetes.io/arch=amd64
                     kubernetes.io/hostname=vsi
                     kubernetes.io/os=linux
