@@ -27,6 +27,7 @@ import (
 
 func main() {
 	log.Info("solios device plugin starting")
+
 	soliosSrv := solios.NewSoliosServer()
 	go soliosSrv.Run()
 
@@ -43,6 +44,7 @@ func main() {
 		log.Error("Failed to created FS watcher.")
 		os.Exit(1)
 	}
+
 	defer watcher.Close()
 	err = watcher.Add(solios.DEVICE_PLUG_PATH)
 	if err != nil {

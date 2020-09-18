@@ -15,6 +15,9 @@
  */
 package server
 
+//#include "srm.h"
+import "C"
+
 import (
 	"context"
 	"fmt"
@@ -23,6 +26,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -34,7 +38,11 @@ import (
 )
 
 const (
-	RESOURCE_NAME        string = "verisilicon.com/solios"
+	RESOURCE_NAME_SOLIOS string = "verisilicon.com/solios"
+	RESOURCE_NAME_480P   string = "verisilicon.com/solios_480p"
+	RESOURCE_NAME_720P   string = "verisilicon.com/solios_720p"
+	RESOURCE_NAME_1080P  string = "verisilicon.com/solios_1080p"
+	RESOURCE_NAME_2160P  string = "verisilicon.com/solios_2160p"
 	LOCATION             string = "/dev"
 	SOLIOS_SOCKET        string = "solios.sock"
 	SOLIOS_DEVICE_PREFIX string = "transcoder"
@@ -48,7 +56,9 @@ type SoliosServer struct {
 	notify      chan bool
 	ctx         context.Context
 	cancel      context.CancelFunc
-	restartFlag bool //restart?
+	restartFlag bool
+	mode        int //solios/480p/720p/1080p/2160p
+	res_name    string
 }
 
 func NewSoliosServer() *SoliosServer {
@@ -60,21 +70,38 @@ func NewSoliosServer() *SoliosServer {
 		ctx:         ctx,
 		cancel:      cancel,
 		restartFlag: false,
+		mode:        0,
 	}
 }
 
 func (s *SoliosServer) Run() error {
-	err := s.listDevice()
-	if err != nil {
-		log.Fatalf("list device error: %v", err)
+
+	if s.mode == 0 {
+		s.res_name = RESOURCE_NAME_SOLIOS
 	}
 
-	go func() {
-		err := s.watchDevice()
-		if err != nil {
-			log.Println("watch devices error")
-		}
-	}()
+	if s.mode == 1 {
+		s.res_name = RESOURCE_NAME_480P
+	}
+
+	if s.mode == 2 {
+		s.res_name = RESOURCE_NAME_720P
+	}
+
+	if s.mode == 3 {
+		s.res_name = RESOURCE_NAME_1080P
+	}
+
+	if s.mode == 3 {
+		s.res_name = RESOURCE_NAME_2160P
+	}
+
+	C.srm_init()
+
+	count, err := s.listDevice()
+	if err != nil {
+		log.Fatalf("list device error: %v, count:%v", count, err)
+	}
 
 	pluginapi.RegisterDevicePluginServer(s.srv, s)
 	err = syscall.Unlink(DEVICE_PLUG_PATH + SOLIOS_SOCKET)
@@ -91,16 +118,16 @@ func (s *SoliosServer) Run() error {
 		lastCrashTime := time.Now()
 		restartCount := 0
 		for {
-			log.Printf("start GPPC server for '%s'", RESOURCE_NAME)
+			log.Printf("start GPPC server for '%s'", s.res_name)
 			err = s.srv.Serve(l)
 			if err == nil {
 				break
 			}
 
-			log.Printf("GRPC server for '%s' crashed with error: $v", RESOURCE_NAME, err)
+			log.Printf("GRPC server for '%s' crashed with error: $v", s.res_name, err)
 
 			if restartCount > 5 {
-				log.Fatal("GRPC server for '%s' has repeatedly crashed recently. Quitting", RESOURCE_NAME)
+				log.Fatal("GRPC server for '%s' has repeatedly crashed recently. Quitting", s.res_name)
 			}
 			timeSinceLastCrash := time.Since(lastCrashTime).Seconds()
 			lastCrashTime = time.Now()
@@ -122,124 +149,143 @@ func (s *SoliosServer) Run() error {
 	return nil
 }
 
-func (s *SoliosServer) RegisterToKubelet() error {
-	socketFile := filepath.Join(DEVICE_PLUG_PATH + KUBELET_SOCKET)
+func (s *SoliosServer) listDevice() (int, error) {
+	count := 0
 
-	conn, err := s.dial(socketFile, 5*time.Second)
-	if err != nil {
-		return err
+	if s.mode == 0 {
+		dir, err := ioutil.ReadDir(LOCATION)
+		if err != nil {
+			return 0, err
+		}
+		for _, f := range dir {
+			if f.IsDir() {
+				continue
+			}
+			if strings.HasPrefix(f.Name(), SOLIOS_DEVICE_PREFIX) {
+				s.devices[f.Name()] = &pluginapi.Device{
+					ID:     f.Name(),
+					Health: pluginapi.Healthy,
+				}
+				count++
+				log.Infof("found device '%s'", f.Name())
+			}
+		}
+		log.Infof("found solios-x resources '%d'", count)
+	} else {
+		cress := C.srm_get_total_resource(C.int(s.mode))
+		for i := 0; i < int(cress); i++ {
+			s.devices[strconv.Itoa(i)] = &pluginapi.Device{
+				ID:     strconv.Itoa(i),
+				Health: pluginapi.Healthy,
+			}
+		}
+		count = int(cress)
+		log.Infof("found 480p resources '%d'", count)
 	}
-	defer conn.Close()
-
-	client := pluginapi.NewRegistrationClient(conn)
-	req := &pluginapi.RegisterRequest{
-		Version:      pluginapi.Version,
-		Endpoint:     path.Base(DEVICE_PLUG_PATH + SOLIOS_SOCKET),
-		ResourceName: RESOURCE_NAME,
-	}
-	log.Infof("Register to kubelet with endpoint %s", req.Endpoint)
-	_, err = client.Register(context.Background(), req)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return count, nil
 }
 
-// GetDevicePluginOptions returns options to be communicated with Device
-// Manager
-func (s *SoliosServer) GetDevicePluginOptions(ctx context.Context, e *pluginapi.Empty) (*pluginapi.DevicePluginOptions, error) {
-	log.Infoln("GetDevicePluginOptions called")
-	return &pluginapi.DevicePluginOptions{PreStartRequired: true}, nil
-}
-
-// ListAndWatch returns a stream of List of Devices
-// Whenever a Device state change or a Device disappears, ListAndWatch
-// returns the new list
 func (s *SoliosServer) ListAndWatch(e *pluginapi.Empty, srv pluginapi.DevicePlugin_ListAndWatchServer) error {
 	log.Infoln("ListAndWatch called")
-	devs := make([]*pluginapi.Device, len(s.devices))
 
+	devs := make([]*pluginapi.Device, len(s.devices))
 	i := 0
-	for _, dev := range s.devices {
-		devs[i] = dev
+	for i < len(s.devices) {
+		devs[i] = &pluginapi.Device{
+			ID:     strconv.Itoa(i),
+			Health: pluginapi.Healthy,
+		}
 		i++
 	}
+	srv.Send(&pluginapi.ListAndWatchResponse{Devices: devs})
 
-	err := srv.Send(&pluginapi.ListAndWatchResponse{Devices: devs})
-	if err != nil {
-		log.Errorf("ListAndWatch send device error: %v", err)
-		return err
-	}
+	//device mode
+	if s.mode == 0 {
+		for {
+			log.Infoln("waiting for device change")
+			select {
+			case <-s.notify:
+				log.Infoln("start to uopdate device list, devices:", len(s.devices))
+				devs := make([]*pluginapi.Device, len(s.devices))
 
-	// update device list
-	for {
-		log.Infoln("waiting for device change")
-		select {
-		case <-s.notify:
-			log.Infoln("start to uopdate device list, devices:", len(s.devices))
-			devs := make([]*pluginapi.Device, len(s.devices))
+				i := 0
+				for _, dev := range s.devices {
+					devs[i] = dev
+					i++
+				}
 
+				srv.Send(&pluginapi.ListAndWatchResponse{Devices: devs})
+
+			case <-s.ctx.Done():
+				log.Info("ListAndWatch exit")
+				return nil
+			}
+		}
+	} else { //480p/720p/1080p/2160p mode
+		ticker := time.NewTicker(time.Second * 5)
+		for range ticker.C {
+			count, err := s.listDevice()
+			if err != nil {
+				return fmt.Errorf("listDevice error:%v", err)
+			}
+			log.Infof("resource updated to %v", count)
+			devs := make([]*pluginapi.Device, count)
 			i := 0
-			for _, dev := range s.devices {
-				devs[i] = dev
+			for i < count {
+				devs[i] = &pluginapi.Device{
+					ID:     strconv.Itoa(i),
+					Health: pluginapi.Healthy,
+				}
 				i++
 			}
-
 			srv.Send(&pluginapi.ListAndWatchResponse{Devices: devs})
-
-		case <-s.ctx.Done():
-			log.Info("ListAndWatch exit")
-			return nil
 		}
 	}
+
+	log.Info("ListAndWatch exit")
+	return nil
 }
 
 func (s *SoliosServer) Allocate(ctx context.Context, reqs *pluginapi.AllocateRequest) (*pluginapi.AllocateResponse, error) {
-	log.Infoln("Allocate was called")
 	resps := &pluginapi.AllocateResponse{}
+	var count, driver_id int = 0, 0
 
-	for _, req := range reqs.ContainerRequests {
-		log.Infof("received request: %v", strings.Join(req.DevicesIDs, ","))
-		rsp := pluginapi.ContainerAllocateResponse{}
-		for _, devname := range req.DevicesIDs {
-			rsp.Devices = append(rsp.Devices, &pluginapi.DeviceSpec{
-				HostPath:      "/dev/" + devname,
-				ContainerPath: "/dev/" + devname,
-				Permissions:   "rwm",
-			})
-			log.Infof("Added device: %v", devname)
+	log.Infoln("Allocate was called")
+
+	if s.mode == 0 {
+		for _, req := range reqs.ContainerRequests {
+			log.Infof("received request: %v", strings.Join(req.DevicesIDs, ","))
+			rsp := pluginapi.ContainerAllocateResponse{}
+			for _, devname := range req.DevicesIDs {
+				rsp.Devices = append(rsp.Devices, &pluginapi.DeviceSpec{
+					HostPath:      "/dev/" + devname,
+					ContainerPath: "/dev/" + devname,
+					Permissions:   "rwm",
+				})
+				log.Infof("Added device: %v", devname)
+			}
+			resps.ContainerResponses = append(resps.ContainerResponses, &rsp)
 		}
+	} else {
+		for _, req := range reqs.ContainerRequests {
+			count += len(req.DevicesIDs)
+		}
+
+		log.Infof("Resource required: %v", count)
+		driver_id = int(C.srm_allocate_resource(0, C.int(count), 0, 0, 0))
+		log.Infof("Matched driver: %v", driver_id)
+
+		rsp := pluginapi.ContainerAllocateResponse{}
+		path := "/dev/transcoder" + strconv.Itoa(driver_id)
+		rsp.Devices = append(rsp.Devices, &pluginapi.DeviceSpec{
+			HostPath:      path,
+			ContainerPath: path,
+			Permissions:   "rwm",
+		})
+		log.Infof("Added device: %v", driver_id)
 		resps.ContainerResponses = append(resps.ContainerResponses, &rsp)
 	}
 	return resps, nil
-}
-
-func (s *SoliosServer) PreStartContainer(ctx context.Context, req *pluginapi.PreStartContainerRequest) (*pluginapi.PreStartContainerResponse, error) {
-	log.Infoln("PreStartContainer called")
-	return &pluginapi.PreStartContainerResponse{}, nil
-}
-
-func (s *SoliosServer) listDevice() error {
-	dir, err := ioutil.ReadDir(LOCATION)
-	if err != nil {
-		return err
-	}
-
-	for _, f := range dir {
-		if f.IsDir() {
-			continue
-		}
-
-		if strings.HasPrefix(f.Name(), SOLIOS_DEVICE_PREFIX) {
-			s.devices[f.Name()] = &pluginapi.Device{
-				ID:     f.Name(),
-				Health: pluginapi.Healthy,
-			}
-			log.Infof("found device '%s'", f.Name())
-		}
-	}
-	return nil
 }
 
 func (s *SoliosServer) watchDevice() error {
@@ -249,6 +295,11 @@ func (s *SoliosServer) watchDevice() error {
 		return fmt.Errorf("NewWatcher error:%v", err)
 	}
 	defer w.Close()
+
+	if s.mode > 0 {
+		log.Info("mode is %d, exit watchDevice", s.mode)
+		return nil
+	}
 
 	done := make(chan bool)
 	go func() {
@@ -262,7 +313,6 @@ func (s *SoliosServer) watchDevice() error {
 				if !ok {
 					continue
 				}
-				log.Infoln("device event:", event.Op.String())
 
 				if event.Op&fsnotify.Create == fsnotify.Create {
 					if !strings.HasPrefix(event.Name, SOLIOS_DEVICE_PREFIX) {
@@ -303,6 +353,11 @@ func (s *SoliosServer) watchDevice() error {
 	return nil
 }
 
+func (s *SoliosServer) PreStartContainer(ctx context.Context, req *pluginapi.PreStartContainerRequest) (*pluginapi.PreStartContainerResponse, error) {
+	log.Infoln("PreStartContainer called")
+	return &pluginapi.PreStartContainerResponse{}, nil
+}
+
 func (s *SoliosServer) dial(unixSocketPath string, timeout time.Duration) (*grpc.ClientConn, error) {
 	c, err := grpc.Dial(unixSocketPath, grpc.WithInsecure(), grpc.WithBlock(),
 		grpc.WithTimeout(timeout),
@@ -316,4 +371,33 @@ func (s *SoliosServer) dial(unixSocketPath string, timeout time.Duration) (*grpc
 	}
 
 	return c, nil
+}
+
+func (s *SoliosServer) RegisterToKubelet() error {
+	socketFile := filepath.Join(DEVICE_PLUG_PATH + KUBELET_SOCKET)
+
+	conn, err := s.dial(socketFile, 5*time.Second)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	client := pluginapi.NewRegistrationClient(conn)
+	req := &pluginapi.RegisterRequest{
+		Version:      pluginapi.Version,
+		Endpoint:     path.Base(DEVICE_PLUG_PATH + SOLIOS_SOCKET),
+		ResourceName: s.res_name,
+	}
+
+	log.Infof("Register to kubelet with endpoint %s", req.Endpoint)
+	_, err = client.Register(context.Background(), req)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *SoliosServer) GetDevicePluginOptions(ctx context.Context, e *pluginapi.Empty) (*pluginapi.DevicePluginOptions, error) {
+	log.Infoln("GetDevicePluginOptions called")
+	return &pluginapi.DevicePluginOptions{PreStartRequired: true}, nil
 }

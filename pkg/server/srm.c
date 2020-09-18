@@ -428,7 +428,7 @@ void srm_close(void)
     free(srm);
 }
 
-int srm_get_total_resource(void)
+int srm_get_total_resource(int type)
 {
     int i = 0;
     long avg_dec[12] = {0};
@@ -484,10 +484,13 @@ int srm_get_total_resource(void)
         count++;
         usleep(5000);
     }
-    return srm_avg->total_res.res_480p30;
+    if( type == 0) return srm_avg->total_res.res_480p30;
+    if( type == 1) return srm_avg->total_res.res_720p30;
+    if( type == 2) return srm_avg->total_res.res_1080p30;
+    if( type == 3) return srm_avg->total_res.res_2160p30;
 }
 
-int srm_allocate_resource(SrmMode mode, int req)
+int srm_allocate_resource(SrmMode mode, int req480p, int req720p, int req1080p, int req2160p)
 {
     SrmContext *srm = gsrm;
     SrmDriverStatus *driver_status = srm->driver_status;
@@ -501,12 +504,10 @@ int srm_allocate_resource(SrmMode mode, int req)
         delta = 0;
     }
 
-    //total_req = req->res_480p30 +
-    //            req->res_720p30 * 3 +
-    //            req->res_1080p30 * 6 +
-    //            req->res_2160p30 * 24;
-
-    total_req = req;
+    total_req = req480p +
+                req720p * 3 +
+                req1080p * 6 +
+                req2160p * 24;
 
     printf("total_req = %d\n", total_req);
     for (i = 0; i < srm->driver_nums; i++) {
@@ -515,19 +516,18 @@ int srm_allocate_resource(SrmMode mode, int req)
 
     for (i = 0; i < srm->driver_nums; i++) {
         SrmTotalSource *driver_res = &srm->driver_status[i].comp_res;
-        printf("available[%d]=%d, total_req = %d\n", i, available[i], total_req);
-#if 0
-        if (req->res_480p30 > driver_res->res_480p30 ||
-            req->res_720p30 > driver_res->res_720p30 ||
-            req->res_1080p30 > driver_res->res_1080p30 ||
-            req->res_2160p30 > driver_res->res_2160p30)
+        printf("available[%d]=%d", i, available[i]);
+        if (req480p > driver_res->res_480p30 ||
+            req720p > driver_res->res_720p30 ||
+            req1080p > driver_res->res_1080p30 ||
+            req2160p > driver_res->res_2160p30)
         {
-            printf(" [x]\n");
+            printf(" [out of resources]\n");
             continue;
         } else {
             printf("\n");
         }
-#endif
+
         if (available[i] > total_req)
         {
             if (mode == SRM_BALANCE)
@@ -552,25 +552,4 @@ int srm_allocate_resource(SrmMode mode, int req)
     }
 
     return selected;
-}
-
-int main(void)
-{
-    int req = 0;
-    int res = 0;
-    int ret = 0;
-
-    srm_init();
-    res = srm_get_total_resource();
-    printf("Total resource is %d\n", res);
-
-    srm_dump_resource();
-
-    //try to allocate resource
-    req = 40;
-    ret = srm_allocate_resource(SRM_LOW_POWER, req);
-    printf("Get driver = %d\n", ret);
-
-    srm_close();
-    return 0;
 }

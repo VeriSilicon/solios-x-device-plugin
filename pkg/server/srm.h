@@ -38,7 +38,8 @@ typedef enum SrmMode
 void srm_init(void);
 void srm_close(void);
 int srm_calculate(void);
-int srm_allocate_driver(SrmMode mode, int req);
+int srm_get_total_resource(int type);
+int srm_allocate_resource(SrmMode mode, int req480p, int req720p, int req1080p, int req2160p);
 void srm_dump_resource(void);
 
 #endif
