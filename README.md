@@ -37,7 +37,7 @@ If your driver was already installed, please skip this step.
 ## Deploy plugin DaemonSet
 
 ```bash
-$ kubectl apply -f https://raw.githubusercontent.com/VeriSilicon/solios-x-device-plugin/master/deployments/solios-x-device-plugin.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/VeriSilicon/solios-x-device-plugin/master/deployments/solios-x-device-plugin-solios.yaml
 ```
 
 ## Label your server
