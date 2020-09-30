@@ -1,5 +1,4 @@
-FROM alpine:latest
+FROM debian:stable-slim
 
-COPY solios-x-device-plugin /root/
-
-CMD ["/root/solios-x-device-plugin"]
+COPY solios-x-device-plugin /bin/
+CMD ["solios-x-device-plugin"]

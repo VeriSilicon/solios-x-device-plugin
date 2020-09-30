@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: solios-test-pod
+  name: solios-test-pod-720p
   labels:
-    name: solios-test-pod
+    name: solios-test-pod-720p
 spec:
   containers:
   - name: solios-x
-    image: verisilicon/solios-x:latest_csd
+    image: verisilicon/solios-x:latest
     imagePullPolicy: IfNotPresent
     volumeMounts:
       - name: sys
@@ -16,12 +16,12 @@ spec:
         mountPath: /hugepages
     resources:
       requests:
-        verisilicon.com/solios: 1
+        verisilicon.com/solios720p: 1
       limits:
-        memory: "500Mi"
-        hugepages-2Mi: 1024Mi
-        cpu: 1
-        verisilicon.com/solios: 1
+        memory: "100Mi"
+        hugepages-2Mi: 100Mi
+        cpu: 600m
+        verisilicon.com/solios_720p: 1
     ports:
       - containerPort: 80
     env:

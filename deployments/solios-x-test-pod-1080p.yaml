@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: solios-test-pod
+  name: solios-test-pod-1080p
   labels:
-    name: solios-test-pod
+    name: solios-test-pod-1080p
 spec:
   containers:
   - name: solios-x
@@ -16,12 +16,12 @@ spec:
         mountPath: /hugepages
     resources:
       requests:
-        verisilicon.com/solios: 1
+        verisilicon.com/solios_1080p: 1
       limits:
-        memory: "500Mi"
-        hugepages-2Mi: 1024Mi
-        cpu: 4
-        verisilicon.com/solios: 1
+        memory: "180Mi"
+        hugepages-2Mi: 180Mi
+        cpu: 1000m
+        verisilicon.com/solios_1080p: 1
     ports:
       - containerPort: 80
     env:

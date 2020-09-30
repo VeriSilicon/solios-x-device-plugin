@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: solios-device-plugin-daemonset-480p
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      name: solios-device-plugin-480p
+  template:
+    metadata:
+      annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ""
+      labels:
+        name: solios-device-plugin-480p
+    spec:
+      tolerations:
+      - key: CriticalAddonsOnly
+        operator: Exists
+      containers:
+      - image: verisilicon/solios-x-device-plugin:latest
+        command: ["solios-x-device-plugin"]
+        args: ["-allocation_unit", "480p", "-power_mode", "balance"]
+        name: solios-x-device-plugin
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          readOnlyRootFilesystem: true
+        volumeMounts:
+        - name: devfs
+          mountPath: /dev
+        - name: sys
+          mountPath: /sys          
+        - name: kubeletsockets
+          mountPath: /var/lib/kubelet/device-plugins
+      volumes:
+      - name: devfs
+        hostPath:
+          path: /dev
+      - name: sys
+        hostPath:
+          path: /sys          
+      - name: kubeletsockets
+        hostPath:
+          path: /var/lib/kubelet/device-plugins

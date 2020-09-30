@@ -45,55 +45,83 @@ const (
 	RESOURCE_NAME_2160P  string = "verisilicon.com/solios_2160p"
 	LOCATION             string = "/dev"
 	SOLIOS_SOCKET        string = "solios.sock"
+	SOLIOS_480P_SOCKET   string = "solios_480p.sock"
+	SOLIOS_720P_SOCKET   string = "solios_720p.sock"
+	SOLIOS_1080P_SOCKET  string = "solios_1080p.sock"
+	SOLIOS_2160P_SOCKET  string = "solios_2160p.sock"
 	SOLIOS_DEVICE_PREFIX string = "transcoder"
 	KUBELET_SOCKET       string = "kubelet.sock"
 	DEVICE_PLUG_PATH     string = "/var/lib/kubelet/device-plugins/"
 )
 
 type SoliosServer struct {
-	srv         *grpc.Server
-	devices     map[string]*pluginapi.Device
-	notify      chan bool
-	ctx         context.Context
-	cancel      context.CancelFunc
-	restartFlag bool
-	mode        int //solios/480p/720p/1080p/2160p
-	res_name    string
+	srv             *grpc.Server
+	devices         map[string]*pluginapi.Device
+	notify          chan bool
+	ctx             context.Context
+	cancel          context.CancelFunc
+	socket_name     string
+	allocation_unit int //0 - solios, 1 - 480p, 2- 720p , 3- 1080p, 4 - 2160p
+	power_mode      int //0 - Fix mode, 1 - Power Saving mode
+	res_name        string
 }
 
 func NewSoliosServer() *SoliosServer {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &SoliosServer{
-		devices:     make(map[string]*pluginapi.Device),
-		srv:         grpc.NewServer(grpc.EmptyServerOption{}),
-		notify:      make(chan bool),
-		ctx:         ctx,
-		cancel:      cancel,
-		restartFlag: false,
-		mode:        0,
+		devices:         make(map[string]*pluginapi.Device),
+		srv:             grpc.NewServer(grpc.EmptyServerOption{}),
+		notify:          make(chan bool),
+		ctx:             ctx,
+		cancel:          cancel,
+		socket_name:     SOLIOS_SOCKET,
+		allocation_unit: 0, //defailt = solios
+		power_mode:      0, //defailt = BALANCE
 	}
 }
 
-func (s *SoliosServer) Run() error {
+func (s *SoliosServer) Run(allocation_unit string, power_mode string) error {
 
-	if s.mode == 0 {
+	//get input parameters
+	if strings.Compare(allocation_unit, "solios") == 0 {
+		s.allocation_unit = 0
+	} else if strings.Compare(allocation_unit, "480p") == 0 {
+		s.allocation_unit = 1
+	} else if strings.Compare(allocation_unit, "720p") == 0 {
+		s.allocation_unit = 2
+	} else if strings.Compare(allocation_unit, "1080p") == 0 {
+		s.allocation_unit = 3
+	} else if strings.Compare(allocation_unit, "2160p") == 0 {
+		s.allocation_unit = 4
+	} else {
+		log.Infoln("Invalid allocation_unit string, set allocation_unit to solios")
+	}
+
+	if strings.Compare(power_mode, "power_saving") == 0 {
+		s.power_mode = 1
+	} else if strings.Compare(power_mode, "balance") == 0 {
+		s.power_mode = 0
+	} else {
+		log.Infoln("Invalid power_mode string, set power_mode to power_saving")
+	}
+
+	log.Printf("Run, allocation_unit=%d, power_mode=%d", s.allocation_unit, s.power_mode)
+
+	if s.allocation_unit == 0 {
 		s.res_name = RESOURCE_NAME_SOLIOS
-	}
-
-	if s.mode == 1 {
+		s.socket_name = SOLIOS_SOCKET
+	} else if s.allocation_unit == 1 {
 		s.res_name = RESOURCE_NAME_480P
-	}
-
-	if s.mode == 2 {
+		s.socket_name = SOLIOS_480P_SOCKET
+	} else if s.allocation_unit == 2 {
 		s.res_name = RESOURCE_NAME_720P
-	}
-
-	if s.mode == 3 {
+		s.socket_name = SOLIOS_720P_SOCKET
+	} else if s.allocation_unit == 3 {
 		s.res_name = RESOURCE_NAME_1080P
-	}
-
-	if s.mode == 3 {
+		s.socket_name = SOLIOS_1080P_SOCKET
+	} else if s.allocation_unit == 4 {
 		s.res_name = RESOURCE_NAME_2160P
+		s.socket_name = SOLIOS_2160P_SOCKET
 	}
 
 	C.srm_init()
@@ -104,12 +132,12 @@ func (s *SoliosServer) Run() error {
 	}
 
 	pluginapi.RegisterDevicePluginServer(s.srv, s)
-	err = syscall.Unlink(DEVICE_PLUG_PATH + SOLIOS_SOCKET)
+	err = syscall.Unlink(DEVICE_PLUG_PATH + s.socket_name)
 	if err != nil && !os.IsNotExist(err) {
 		return err
 	}
 
-	l, err := net.Listen("unix", DEVICE_PLUG_PATH+SOLIOS_SOCKET)
+	l, err := net.Listen("unix", DEVICE_PLUG_PATH+s.socket_name)
 	if err != nil {
 		return err
 	}
@@ -140,7 +168,7 @@ func (s *SoliosServer) Run() error {
 	}()
 
 	// Wait for server to start by lauching a blocking connection
-	conn, err := s.dial(SOLIOS_SOCKET, 5*time.Second)
+	conn, err := s.dial(s.socket_name, 5*time.Second)
 	if err != nil {
 		return err
 	}
@@ -152,7 +180,7 @@ func (s *SoliosServer) Run() error {
 func (s *SoliosServer) listDevice() (int, error) {
 	count := 0
 
-	if s.mode == 0 {
+	if s.allocation_unit == 0 {
 		dir, err := ioutil.ReadDir(LOCATION)
 		if err != nil {
 			return 0, err
@@ -170,9 +198,8 @@ func (s *SoliosServer) listDevice() (int, error) {
 				log.Infof("found device '%s'", f.Name())
 			}
 		}
-		log.Infof("found solios-x resources '%d'", count)
 	} else {
-		cress := C.srm_get_total_resource(C.int(s.mode))
+		cress := C.srm_get_total_resource(C.int(s.allocation_unit))
 		for i := 0; i < int(cress); i++ {
 			s.devices[strconv.Itoa(i)] = &pluginapi.Device{
 				ID:     strconv.Itoa(i),
@@ -180,8 +207,8 @@ func (s *SoliosServer) listDevice() (int, error) {
 			}
 		}
 		count = int(cress)
-		log.Infof("found 480p resources '%d'", count)
 	}
+	log.Infof("allocation_unit=%d, resources '%s' = %d", s.allocation_unit, s.res_name, count)
 	return count, nil
 }
 
@@ -200,12 +227,12 @@ func (s *SoliosServer) ListAndWatch(e *pluginapi.Empty, srv pluginapi.DevicePlug
 	srv.Send(&pluginapi.ListAndWatchResponse{Devices: devs})
 
 	//device mode
-	if s.mode == 0 {
+	if s.allocation_unit == 0 {
 		for {
 			log.Infoln("waiting for device change")
 			select {
 			case <-s.notify:
-				log.Infoln("start to uopdate device list, devices:", len(s.devices))
+				log.Infoln("start to update device list, devices: %d", len(s.devices))
 				devs := make([]*pluginapi.Device, len(s.devices))
 
 				i := 0
@@ -213,7 +240,6 @@ func (s *SoliosServer) ListAndWatch(e *pluginapi.Empty, srv pluginapi.DevicePlug
 					devs[i] = dev
 					i++
 				}
-
 				srv.Send(&pluginapi.ListAndWatchResponse{Devices: devs})
 
 			case <-s.ctx.Done():
@@ -228,7 +254,6 @@ func (s *SoliosServer) ListAndWatch(e *pluginapi.Empty, srv pluginapi.DevicePlug
 			if err != nil {
 				return fmt.Errorf("listDevice error:%v", err)
 			}
-			log.Infof("resource updated to %v", count)
 			devs := make([]*pluginapi.Device, count)
 			i := 0
 			for i < count {
@@ -252,17 +277,18 @@ func (s *SoliosServer) Allocate(ctx context.Context, reqs *pluginapi.AllocateReq
 
 	log.Infoln("Allocate was called")
 
-	if s.mode == 0 {
+	if s.allocation_unit == 0 {
 		for _, req := range reqs.ContainerRequests {
-			log.Infof("received request: %v", strings.Join(req.DevicesIDs, ","))
+			log.Infof("received request: devices = %v", strings.Join(req.DevicesIDs, ","))
 			rsp := pluginapi.ContainerAllocateResponse{}
 			for _, devname := range req.DevicesIDs {
+				path := "/dev/transcoder" + devname
 				rsp.Devices = append(rsp.Devices, &pluginapi.DeviceSpec{
-					HostPath:      "/dev/" + devname,
-					ContainerPath: "/dev/" + devname,
+					HostPath:      path,
+					ContainerPath: path,
 					Permissions:   "rwm",
 				})
-				log.Infof("Added device: %v", devname)
+				log.Infof("Added device: %v", path)
 			}
 			resps.ContainerResponses = append(resps.ContainerResponses, &rsp)
 		}
@@ -272,8 +298,12 @@ func (s *SoliosServer) Allocate(ctx context.Context, reqs *pluginapi.AllocateReq
 		}
 
 		log.Infof("Resource required: %v", count)
-		driver_id = int(C.srm_allocate_resource(0, C.int(count), 0, 0, 0))
-		log.Infof("Matched driver: %v", driver_id)
+		driver_id = int(C.srm_allocate_resource(C.int(s.power_mode), C.int(s.allocation_unit), C.int(count)))
+
+		if driver_id == -1 {
+			log.Infof("Can't Matched any device")
+			return resps, nil
+		}
 
 		rsp := pluginapi.ContainerAllocateResponse{}
 		path := "/dev/transcoder" + strconv.Itoa(driver_id)
@@ -282,7 +312,7 @@ func (s *SoliosServer) Allocate(ctx context.Context, reqs *pluginapi.AllocateReq
 			ContainerPath: path,
 			Permissions:   "rwm",
 		})
-		log.Infof("Added device: %v", driver_id)
+		log.Infof("Added device: %v", path)
 		resps.ContainerResponses = append(resps.ContainerResponses, &rsp)
 	}
 	return resps, nil
@@ -296,8 +326,8 @@ func (s *SoliosServer) watchDevice() error {
 	}
 	defer w.Close()
 
-	if s.mode > 0 {
-		log.Info("mode is %d, exit watchDevice", s.mode)
+	if s.allocation_unit > 0 {
+		log.Info("allocation_unit is %d, exit watchDevice", s.allocation_unit)
 		return nil
 	}
 
@@ -385,7 +415,7 @@ func (s *SoliosServer) RegisterToKubelet() error {
 	client := pluginapi.NewRegistrationClient(conn)
 	req := &pluginapi.RegisterRequest{
 		Version:      pluginapi.Version,
-		Endpoint:     path.Base(DEVICE_PLUG_PATH + SOLIOS_SOCKET),
+		Endpoint:     path.Base(DEVICE_PLUG_PATH + s.socket_name),
 		ResourceName: s.res_name,
 	}
 

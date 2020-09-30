@@ -29,17 +29,16 @@
 #ifndef SRM_H
 #define SRM_H
 
-typedef enum SrmMode
-{
-    SRM_LOW_POWER = 0,
-    SRM_BALANCE = 1,
+typedef enum SrmMode {
+    SRM_BALANCE   = 0,
+    SRM_LOW_POWER = 1,
 } SrmMode;
 
 void srm_init(void);
 void srm_close(void);
 int srm_calculate(void);
 int srm_get_total_resource(int type);
-int srm_allocate_resource(SrmMode mode, int req480p, int req720p, int req1080p, int req2160p);
+int srm_allocate_resource(int mode, int req_type, int req_nums);
 void srm_dump_resource(void);
 
 #endif

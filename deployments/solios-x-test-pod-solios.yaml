@@ -7,7 +7,7 @@ metadata:
 spec:
   containers:
   - name: solios-x
-    image: verisilicon/solios-x:latest_csd
+    image: verisilicon/solios-x:latest
     imagePullPolicy: IfNotPresent
     volumeMounts:
       - name: sys

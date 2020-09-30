@@ -16,6 +16,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -26,10 +28,17 @@ import (
 )
 
 func main() {
+
+	var allocation_unit = flag.String("allocation_unit", "", "resource allocation unit, can be solios/480p/720p/1080p/2160p")
+	var power_mode = flag.String("power_mode", "", "resource allocation mode. can be power_saving/balance")
+
 	log.Info("solios device plugin starting")
+	flag.Parse()
+	fmt.Println("-allocation_unit", *allocation_unit)
+	fmt.Println("-power_mode", *power_mode)
 
 	soliosSrv := solios.NewSoliosServer()
-	go soliosSrv.Run()
+	go soliosSrv.Run(*allocation_unit, *power_mode)
 
 	if err := soliosSrv.RegisterToKubelet(); err != nil {
 		log.Fatalf("register to kubelet error: %v", err)
