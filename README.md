@@ -10,10 +10,11 @@
   * [Testing the plugin by Deployment](#Testing-the-plugin-by-Deployment)
   * [Or Testing the plugin by Pod](#Or-Testing-the-plugin-by-Pod)
 * [More Configuration](#More-Configuration)
-  * [Resource allocation unit](#Resource-allocation-unit)
-  * [Resource allocation priority](#Resource-allocation-priority)
-  * [Flexible usage](#Flexible-usage)
-* [Improve the transcoding performance](#Improve-the-transcoding-performance)
+  * [Resource Allocation Unit](#Resource-Allocation-Unit)
+  * [Resource Allocation Priority](#Resource-Allocation-Priority)
+  * [Manage Resource Efficiency](#Manage-Resource-Efficiency)
+  * [Flexible Usage](#Flexible-Usage)
+* [Improve Transcoding Performance](#Improve-Transcoding-Performance)
 
 # Introduction
 
@@ -216,48 +217,53 @@ deployment.apps "solios-test-pod-csd" deleted
 ```
 
 # More Configurations
-Solios-X platform is powerfull, one Solios-X card can handle four 3840x2160@30 fps trandcoding.
-In Solios-X K8S device plugin, by default the resource which exposed to K8S is one Solios-X card, which is named "verisilicon.com/solios". that means the assigned POD will own this card exclusively - even if the POD only doing the 480p trascoding.
+Solios-X platform is powerfull, one Solios-X card can handle 4 x  3840x2160@30 fps trandcoding.
 
-Solios-X device plugin provides more resource allocation way - one Solios-X card's caplility can be described as "480p" transcoding capbility, "720p" transcoding capbility, "1080p" transcoding capbility, "2160p" transcoding capbility.
+In Solios-X K8S device plugin, by default the resources exposed to K8S is united by Solios-X card, which is named "verisilicon.com/solios". that means if you have 10 cards installed on the server then you will see verisilicon.com/solios = 10 if you start solios-x device plugin by default without any extra parameters. In this case the assigned POD will own this card exclusively - even if the POD only doing the 480p trascoding.
 
-- 1 Solios-X = 4 x 3840x2160@30 transcoding capbility
-- 1 Solios-X = 16 x 1920x1080@30 transcoding capbility
-- 1 Solios-X = 32 x 1280x720p@30 transcoding capbility
-- 1 Solios-X = 96 x 720x480p@30 transcoding capbility
+Solios-X device plugin provides more resource allocation way - one Solios-X card's caplility can be splited as many "smaller" pieces, these "small" pieces are "480p" transcoding capbility, "720p" transcoding capbility, "1080p" transcoding capbility, "2160p" transcoding capbility.
 
-## Resource allocation unit
+In theory, 1 Solios-X card transcoding capbility =
+- 4 x 3840x2160@30 transcoding capbility
+- 16 x 1920x1080@30 transcoding capbility
+- 32 x 1280x720p@30 transcoding capbility
+- 96 x 720x480p@30 transcoding capbility
+
+But in reality, the real capbility can't reach 100% becasue of many reasons like task scheduling, normaly the conversion efficiency is 70%.
+
+The conversion efficiency is configurable, please ref [Manage Resource Efficiency](#Manage-Resource-Efficiency)
+
+## Resource Allocation Unit
 So Solios-X device plugin support below 5 resource allocation ways:
 Solios/480p/720p/1080p/2160p
 
-Resource allocation type can be configed by solios-x-device-plugin args "-unit":
-The parameters can be:
-- "Solios"
-- "480p"
-- "720p"
-- "1080p"
-- "2160p"
+Resource allocation type can be configed by solios-x-device-plugin args "-unit", the parameters can be:
 
-For example add below lines in Solios-X plugin DaemonSet YAML file will let Solios-X device plugin allocate resources in "480p" transcoding capbility mode:
+1. **"solios":**
+The allocated resource is one complete Solios-X card, hence POD can use it alone, once one Solios-X card been been allocated, then it will not able to be allocated by "solios" resource again, but bit can still be allocated by "480p", "720p", "1080p", "2160p" any more.
+.
+2. **"480p" / "720p" / "1080p" / "2160p":**
+The allocated resource is NOT one complete Solios-X card, but part of the one Solios-X transcoding capbility. So one solios-X card can allocate many "480p", "720p", "1080p", "2160p" resources.
+
+For example, adding below lines in Solios-X plugin DaemonSet YAML file will let Solios-X device plugin allocate resources in "480p" transcoding capbility mode:
 ```bash
 args: ["-unit", "480p"]
 ```
 
-## Resource allocation priority
+## Resource Allocation Priority
 
 If there are multiple Solios-X cards are installed on server, and if the resource was not configured with solios mode, then for the requested resources, what's the resource allocation algorithm?
 
-There are two algorithms which can be configed by solios-x-device-plugin args "-priority":
-The parameters can be:
+There are two algorithms which can be configed by solios-x-device-plugin args "-priority", the parameters can be:
 - performance
 - power_saving
 
 SRM resource manager will keep monitorning the left transcoding capbility for all of the Solios-X cards.
 
-"performance":
+**"performance":**
 SRM resource manager will allocate resource from the most free Solios-X card hence the transcoding can reach the best performance. this is the default mode.
 
-"power_saving":
+**"power_saving":**
 SRM resource manager will try to find out the left resource vs requested resources best-matched card hence in case transcoding job is not that much, more Solios-X card will be in idile state hence power can be saved.
 In this mode the transcoder performance will be worse than "performance" mode.
 
@@ -268,7 +274,10 @@ args: ["-priority", "power_saving"]
 
 - note: "-priority" parameters is only required if the "-unit" is not "solios"
 
-## Flexible usage
+## Manage Resource Efficiency
+You can set the resource conversion efficiency by parameter "efficiency" during solios-x device plugin start, the valiad value is a float value which is >0 and <1, by default it's 0.7.
+
+## Flexible Usage
 
 You can deploy multiple solios-x device plugins to provide multiple unit resources allocation method:
 
@@ -319,10 +328,12 @@ Allocatable:
   verisilicon.com/solios_2160p:  16
   verisilicon.com/solios:        10
 ```
-# Improve the transcoding performance
+# Improve Transcoding Performance
 
 Many threads will cost too much CPU efforts, CPU will be the final bottleneck once the number of threada reach some value.
 
 1. Try to reduce numbers of PODs, try to avoid using verisilicon.com/solios_480p, verisilicon.com/solios_720p, and use resource verisilicon.com/solios_1080p, verisilicon.com/solios_2160p, and verisilicon.com/solios.
-2. If you are using FFmpeg for the application, try to add "-filter_threads 1 -filter_complex_threads 1 -threads 1
-" parameters in the FFmpeg command line.
+
+2. If you are using FFmpeg for the application, try to add "-filter_threads 1 -filter_complex_threads 1 -threads 1" parameters in the FFmpeg command line.
+
+3. Try to start solios-x device plugin with paramater "-priority performance". YAML files "solios-x-device-plugin-*.YAML" under "deployment" folder all includes this parameter.
