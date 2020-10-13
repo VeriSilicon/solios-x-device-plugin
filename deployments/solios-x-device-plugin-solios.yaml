@@ -20,7 +20,7 @@ spec:
       containers:
       - image: verisilicon/solios-x-device-plugin:latest
         command: ["solios-x-device-plugin"]
-        args: ["-allocation_unit", "solios", "-power_mode", "balance"]
+        args: ["-unit", "solios"]
         name: solios-x-device-plugin
         imagePullPolicy: IfNotPresent
         securityContext:
@@ -29,7 +29,7 @@ spec:
         - name: devfs
           mountPath: /dev
         - name: sys
-          mountPath: /sys          
+          mountPath: /sys
         - name: kubeletsockets
           mountPath: /var/lib/kubelet/device-plugins
       volumes:
@@ -38,7 +38,7 @@ spec:
           path: /dev
       - name: sys
         hostPath:
-          path: /sys          
+          path: /sys
       - name: kubeletsockets
         hostPath:
           path: /var/lib/kubelet/device-plugins

@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: solios-test-deployment
 spec:
-  replicas: 5
+  replicas: 2
   selector:
     matchLabels:
       app: solios-test-pod
@@ -26,9 +26,8 @@ spec:
           requests:
             verisilicon.com/solios: 1
           limits:
-            memory: "500Mi"
+            memory: "512Mi"
             hugepages-2Mi: 1024Mi
-            cpu: 1
             verisilicon.com/solios: 1
       volumes:
       - name: sys

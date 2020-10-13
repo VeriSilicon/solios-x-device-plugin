@@ -1,3 +1,9 @@
+#Solios Capbilty:
+#One Solios = 4 x 4k@30 transcoding or
+#             16 x 2k@30 transcoding or
+#             32 x 720p@30 transcoding or
+#             96 x 480p@30 transcoding
+
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -20,7 +26,7 @@ spec:
       containers:
       - image: verisilicon/solios-x-device-plugin:latest
         command: ["solios-x-device-plugin"]
-        args: ["-allocation_unit", "480p", "-power_mode", "balance"]
+        args: ["-unit", "480p", "-priority", "performance"]
         name: solios-x-device-plugin
         imagePullPolicy: IfNotPresent
         securityContext:
@@ -29,7 +35,7 @@ spec:
         - name: devfs
           mountPath: /dev
         - name: sys
-          mountPath: /sys          
+          mountPath: /sys
         - name: kubeletsockets
           mountPath: /var/lib/kubelet/device-plugins
       volumes:
@@ -38,7 +44,7 @@ spec:
           path: /dev
       - name: sys
         hostPath:
-          path: /sys          
+          path: /sys
       - name: kubeletsockets
         hostPath:
           path: /var/lib/kubelet/device-plugins

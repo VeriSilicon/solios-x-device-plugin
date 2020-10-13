@@ -3,12 +3,17 @@
 # Table of Contents
 
 * [Introduction](#introduction)
-* [Verify node kubelet config](#Verify-node-kubelet-config)
-* [Install Solios-X driver](#Install-Solios-X-driver)
-* [Deploy plugin DaemonSet](#Deploy-plugin-DaemonSet)
-* [Label your server](#Label-your-server)
-* [Testing the plugin by Deployment](#Testing-the-plugin-by-Deployment)
-* [Or Testing the plugin by Pod](#Or-Testing-the-plugin-by-Pod)
+  * [Verify node kubelet config](#Verify-node-kubelet-config)
+  * [Install Solios-X driver](#Install-Solios-X-driver)
+  * [Deploy plugin DaemonSet](#Deploy-plugin-DaemonSet)
+  * [Label your server](#Label-your-server)
+  * [Testing the plugin by Deployment](#Testing-the-plugin-by-Deployment)
+  * [Or Testing the plugin by Pod](#Or-Testing-the-plugin-by-Pod)
+* [More Configuration](#More-Configuration)
+  * [Resource allocation unit](#Resource-allocation-unit)
+  * [Resource allocation priority](#Resource-allocation-priority)
+  * [Flexible usage](#Flexible-usage)
+* [Improve the transcoding performance](#Improve-the-transcoding-performance)
 
 # Introduction
 
@@ -29,7 +34,7 @@ $ ls /var/lib/kubelet/device-plugins/kubelet.sock
 
 ## Install Solios-X driver
 Please Make sure to install Solios-X driver on your server, you can follow https://github.com/VeriSilicon/vpe/blob/vs_develop/readme.md to make and install Solios-X driver.
-After the driver is installed, please double check whether device nodes /dev/transcoderxx are available. If 
+After the driver is installed, please double check whether device nodes /dev/transcoderxx are available. If
 /dev/transcoderxx are available then it means driver was installed successfully.
 
 If your driver was already installed, please skip this step.
@@ -209,3 +214,115 @@ Delete the Pod:
 $kubectl delete -f https://raw.githubusercontent.com/VeriSilicon/solios-x-device-plugin/master/deployments/solios-x-test-pod-csd.yaml
 deployment.apps "solios-test-pod-csd" deleted
 ```
+
+# More Configurations
+Solios-X platform is powerfull, one Solios-X card can handle four 3840x2160@30 fps trandcoding.
+In Solios-X K8S device plugin, by default the resource which exposed to K8S is one Solios-X card, which is named "verisilicon.com/solios". that means the assigned POD will own this card exclusively - even if the POD only doing the 480p trascoding.
+
+Solios-X device plugin provides more resource allocation way - one Solios-X card's caplility can be described as "480p" transcoding capbility, "720p" transcoding capbility, "1080p" transcoding capbility, "2160p" transcoding capbility.
+
+- 1 Solios-X = 4 x 3840x2160@30 transcoding capbility
+- 1 Solios-X = 16 x 1920x1080@30 transcoding capbility
+- 1 Solios-X = 32 x 1280x720p@30 transcoding capbility
+- 1 Solios-X = 96 x 720x480p@30 transcoding capbility
+
+## Resource allocation unit
+So Solios-X device plugin support below 5 resource allocation ways:
+Solios/480p/720p/1080p/2160p
+
+Resource allocation type can be configed by solios-x-device-plugin args "-unit":
+The parameters can be:
+- "Solios"
+- "480p"
+- "720p"
+- "1080p"
+- "2160p"
+
+For example add below lines in Solios-X plugin DaemonSet YAML file will let Solios-X device plugin allocate resources in "480p" transcoding capbility mode:
+```bash
+args: ["-unit", "480p"]
+```
+
+## Resource allocation priority
+
+If there are multiple Solios-X cards are installed on server, and if the resource was not configured with solios mode, then for the requested resources, what's the resource allocation algorithm?
+
+There are two algorithms which can be configed by solios-x-device-plugin args "-priority":
+The parameters can be:
+- performance
+- power_saving
+
+SRM resource manager will keep monitorning the left transcoding capbility for all of the Solios-X cards.
+
+"performance":
+SRM resource manager will allocate resource from the most free Solios-X card hence the transcoding can reach the best performance. this is the default mode.
+
+"power_saving":
+SRM resource manager will try to find out the left resource vs requested resources best-matched card hence in case transcoding job is not that much, more Solios-X card will be in idile state hence power can be saved.
+In this mode the transcoder performance will be worse than "performance" mode.
+
+For example add below lines in Solios-X plugin DaemonSet YAML file will let Solios-X device plugin allocate resources in "power saving" mode:
+```bash
+args: ["-priority", "power_saving"]
+```
+
+- note: "-priority" parameters is only required if the "-unit" is not "solios"
+
+## Flexible usage
+
+You can deploy multiple solios-x device plugins to provide multiple unit resources allocation method:
+
+```bash
+$kubectl  apply -f deployments/solios-x-device-plugin-solios.yaml
+daemonset.apps/solios-device-plugin-daemonset-solios configured
+$kubectl  apply -f deployments/solios-x-device-plugin-480p.yaml
+daemonset.apps/solios-device-plugin-daemonset-480p created
+$kubectl  apply -f deployments/solios-x-device-plugin-720p.yaml
+daemonset.apps/solios-device-plugin-daemonset-720p created
+$kubectl  apply -f deployments/solios-x-device-plugin-1080p.yaml
+daemonset.apps/solios-device-plugin-daemonset-1080p created
+$kubectl  apply -f deployments/solios-x-device-plugin-2160p.yaml
+daemonset.apps/solios-device-plugin-daemonset-2160p created
+```
+
+Check the resources:
+```bash
+$kubectl describe nodes vsi
+...
+Allocatable:
+...
+  verisilicon.com/solios_480p:   670
+  verisilicon.com/solios_720p:   250
+  verisilicon.com/solios_1080p:  110
+  verisilicon.com/solios_2160p:  20
+  verisilicon.com/solios:        10
+```
+
+Then you can request any type of resource in your POD or deployment YAML file;
+
+For example, you want to request 10 1080p transcoding job, then you can:
+
+```bash
+$kubectl  apply -f deployments/solios-x-test-deployment-1080p.yaml
+$kubectl  scale deployment solios-test-deployment-1080p --replicas=10
+```
+
+Check the resources again, the overall resource had been updated:
+```bash
+$kubectl describe nodes vsi
+...
+Allocatable:
+...
+  verisilicon.com/solios_480p:   532
+  verisilicon.com/solios_720p:   200
+  verisilicon.com/solios_1080p:  88
+  verisilicon.com/solios_2160p:  16
+  verisilicon.com/solios:        10
+```
+# Improve the transcoding performance
+
+Many threads will cost too much CPU efforts, CPU will be the final bottleneck once the number of threada reach some value.
+
+1. Try to reduce numbers of PODs, try to avoid using verisilicon.com/solios_480p, verisilicon.com/solios_720p, and use resource verisilicon.com/solios_1080p, verisilicon.com/solios_2160p, and verisilicon.com/solios.
+2. If you are using FFmpeg for the application, try to add "-filter_threads 1 -filter_complex_threads 1 -threads 1
+" parameters in the FFmpeg command line.

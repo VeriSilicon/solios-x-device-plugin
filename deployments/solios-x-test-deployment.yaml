@@ -34,7 +34,6 @@ spec:
           limits:
             memory: "64Mi"
             hugepages-2Mi: 64Mi
-            cpu: 400m
             verisilicon.com/solios_1080p: 1
       volumes:
       - name: sys

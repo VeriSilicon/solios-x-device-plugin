@@ -37,7 +37,7 @@ typedef enum SrmMode {
 void srm_init(void);
 void srm_close(void);
 int srm_calculate(void);
-int srm_get_total_resource(int type);
+int srm_get_total_resource(int type, float efficiency);
 int srm_allocate_resource(int mode, int req_type, int req_nums);
 void srm_dump_resource(void);
 

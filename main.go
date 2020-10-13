@@ -29,16 +29,18 @@ import (
 
 func main() {
 
-	var allocation_unit = flag.String("allocation_unit", "", "resource allocation unit, can be solios/480p/720p/1080p/2160p")
-	var power_mode = flag.String("power_mode", "", "resource allocation mode. can be power_saving/balance")
+	var unit = flag.String("unit", "", "resource allocation unit, can be solios/480p/720p/1080p/2160p")
+	var priority = flag.String("priority", "", "resource allocation mode. can be power_saving/balance")
+	var efficiency = flag.String("efficiency", "", "overall efficiency of transcoder, float value, can be 0-1")
 
 	log.Info("solios device plugin starting")
 	flag.Parse()
-	fmt.Println("-allocation_unit", *allocation_unit)
-	fmt.Println("-power_mode", *power_mode)
+	fmt.Println("-unit", *unit)
+	fmt.Println("-priority", *priority)
+	fmt.Println("-efficiency", *efficiency)
 
 	soliosSrv := solios.NewSoliosServer()
-	go soliosSrv.Run(*allocation_unit, *power_mode)
+	go soliosSrv.Run(*unit, *priority, *efficiency)
 
 	if err := soliosSrv.RegisterToKubelet(); err != nil {
 		log.Fatalf("register to kubelet error: %v", err)

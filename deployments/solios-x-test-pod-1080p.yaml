@@ -20,7 +20,6 @@ spec:
       limits:
         memory: "180Mi"
         hugepages-2Mi: 180Mi
-        cpu: 1000m
         verisilicon.com/solios_1080p: 1
     ports:
       - containerPort: 80

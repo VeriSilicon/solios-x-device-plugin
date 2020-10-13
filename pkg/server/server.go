@@ -55,71 +55,80 @@ const (
 )
 
 type SoliosServer struct {
-	srv             *grpc.Server
-	devices         map[string]*pluginapi.Device
-	notify          chan bool
-	ctx             context.Context
-	cancel          context.CancelFunc
-	socket_name     string
-	allocation_unit int //0 - solios, 1 - 480p, 2- 720p , 3- 1080p, 4 - 2160p
-	power_mode      int //0 - Fix mode, 1 - Power Saving mode
-	res_name        string
+	srv         *grpc.Server
+	devices     map[string]*pluginapi.Device
+	notify      chan bool
+	ctx         context.Context
+	cancel      context.CancelFunc
+	socket_name string
+	unit        int     //0 - solios, 1 - 480p, 2- 720p , 3- 1080p, 4 - 2160p
+	priority    int     //0 - performance mode, 1 - Power Saving mode
+	efficiency  float64 //efficiency of overall resource
+	res_name    string
 }
 
 func NewSoliosServer() *SoliosServer {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &SoliosServer{
-		devices:         make(map[string]*pluginapi.Device),
-		srv:             grpc.NewServer(grpc.EmptyServerOption{}),
-		notify:          make(chan bool),
-		ctx:             ctx,
-		cancel:          cancel,
-		socket_name:     SOLIOS_SOCKET,
-		allocation_unit: 0, //defailt = solios
-		power_mode:      0, //defailt = BALANCE
+		devices:     make(map[string]*pluginapi.Device),
+		srv:         grpc.NewServer(grpc.EmptyServerOption{}),
+		notify:      make(chan bool),
+		ctx:         ctx,
+		cancel:      cancel,
+		socket_name: SOLIOS_SOCKET,
+		unit:        0, //defailt = solios
+		priority:    0, //defailt = performance mode
+		efficiency:  0.7,
 	}
 }
 
-func (s *SoliosServer) Run(allocation_unit string, power_mode string) error {
+func (s *SoliosServer) Run(unit string, priority string, efficiency string) error {
 
 	//get input parameters
-	if strings.Compare(allocation_unit, "solios") == 0 {
-		s.allocation_unit = 0
-	} else if strings.Compare(allocation_unit, "480p") == 0 {
-		s.allocation_unit = 1
-	} else if strings.Compare(allocation_unit, "720p") == 0 {
-		s.allocation_unit = 2
-	} else if strings.Compare(allocation_unit, "1080p") == 0 {
-		s.allocation_unit = 3
-	} else if strings.Compare(allocation_unit, "2160p") == 0 {
-		s.allocation_unit = 4
+	if strings.Compare(unit, "solios") == 0 {
+		s.unit = 0
+	} else if strings.Compare(unit, "480p") == 0 {
+		s.unit = 1
+	} else if strings.Compare(unit, "720p") == 0 {
+		s.unit = 2
+	} else if strings.Compare(unit, "1080p") == 0 {
+		s.unit = 3
+	} else if strings.Compare(unit, "2160p") == 0 {
+		s.unit = 4
 	} else {
-		log.Infoln("Invalid allocation_unit string, set allocation_unit to solios")
+		log.Infoln("Invalid unit string, set unit to solios")
 	}
 
-	if strings.Compare(power_mode, "power_saving") == 0 {
-		s.power_mode = 1
-	} else if strings.Compare(power_mode, "balance") == 0 {
-		s.power_mode = 0
+	if strings.Compare(priority, "power_saving") == 0 {
+		s.priority = 1
+	} else if strings.Compare(priority, "performance") == 0 {
+		s.priority = 0
 	} else {
-		log.Infoln("Invalid power_mode string, set power_mode to power_saving")
+		log.Infoln("Invalid priority string, set priority to performance mode")
 	}
 
-	log.Printf("Run, allocation_unit=%d, power_mode=%d", s.allocation_unit, s.power_mode)
+	f, err := strconv.ParseFloat(efficiency, 64)
+	if err == nil {
+		s.efficiency = f
+	} else {
+		log.Infoln("Invalid efficiency, set efficiency to default value(0.7)")
+	}
 
-	if s.allocation_unit == 0 {
+	log.Printf("Run, unit=%d, priority=%d, efficiency=%0.2f", s.unit, s.priority, s.efficiency)
+
+	if s.unit == 0 {
 		s.res_name = RESOURCE_NAME_SOLIOS
 		s.socket_name = SOLIOS_SOCKET
-	} else if s.allocation_unit == 1 {
+	} else if s.unit == 1 {
 		s.res_name = RESOURCE_NAME_480P
 		s.socket_name = SOLIOS_480P_SOCKET
-	} else if s.allocation_unit == 2 {
+	} else if s.unit == 2 {
 		s.res_name = RESOURCE_NAME_720P
 		s.socket_name = SOLIOS_720P_SOCKET
-	} else if s.allocation_unit == 3 {
+	} else if s.unit == 3 {
 		s.res_name = RESOURCE_NAME_1080P
 		s.socket_name = SOLIOS_1080P_SOCKET
-	} else if s.allocation_unit == 4 {
+	} else if s.unit == 4 {
 		s.res_name = RESOURCE_NAME_2160P
 		s.socket_name = SOLIOS_2160P_SOCKET
 	}
@@ -180,7 +189,7 @@ func (s *SoliosServer) Run(allocation_unit string, power_mode string) error {
 func (s *SoliosServer) listDevice() (int, error) {
 	count := 0
 
-	if s.allocation_unit == 0 {
+	if s.unit == 0 {
 		dir, err := ioutil.ReadDir(LOCATION)
 		if err != nil {
 			return 0, err
@@ -199,7 +208,7 @@ func (s *SoliosServer) listDevice() (int, error) {
 			}
 		}
 	} else {
-		cress := C.srm_get_total_resource(C.int(s.allocation_unit))
+		cress := C.srm_get_total_resource(C.int(s.unit), C.float(s.efficiency))
 		for i := 0; i < int(cress); i++ {
 			s.devices[strconv.Itoa(i)] = &pluginapi.Device{
 				ID:     strconv.Itoa(i),
@@ -208,7 +217,6 @@ func (s *SoliosServer) listDevice() (int, error) {
 		}
 		count = int(cress)
 	}
-	log.Infof("allocation_unit=%d, resources '%s' = %d", s.allocation_unit, s.res_name, count)
 	return count, nil
 }
 
@@ -227,7 +235,7 @@ func (s *SoliosServer) ListAndWatch(e *pluginapi.Empty, srv pluginapi.DevicePlug
 	srv.Send(&pluginapi.ListAndWatchResponse{Devices: devs})
 
 	//device mode
-	if s.allocation_unit == 0 {
+	if s.unit == 0 {
 		for {
 			log.Infoln("waiting for device change")
 			select {
@@ -277,7 +285,7 @@ func (s *SoliosServer) Allocate(ctx context.Context, reqs *pluginapi.AllocateReq
 
 	log.Infoln("Allocate was called")
 
-	if s.allocation_unit == 0 {
+	if s.unit == 0 {
 		for _, req := range reqs.ContainerRequests {
 			log.Infof("received request: devices = %v", strings.Join(req.DevicesIDs, ","))
 			rsp := pluginapi.ContainerAllocateResponse{}
@@ -298,7 +306,7 @@ func (s *SoliosServer) Allocate(ctx context.Context, reqs *pluginapi.AllocateReq
 		}
 
 		log.Infof("Resource required: %v", count)
-		driver_id = int(C.srm_allocate_resource(C.int(s.power_mode), C.int(s.allocation_unit), C.int(count)))
+		driver_id = int(C.srm_allocate_resource(C.int(s.priority), C.int(s.unit), C.int(count)))
 
 		if driver_id == -1 {
 			log.Infof("Can't Matched any device")
@@ -326,8 +334,8 @@ func (s *SoliosServer) watchDevice() error {
 	}
 	defer w.Close()
 
-	if s.allocation_unit > 0 {
-		log.Info("allocation_unit is %d, exit watchDevice", s.allocation_unit)
+	if s.unit > 0 {
+		log.Info("unit is %d, exit watchDevice", s.unit)
 		return nil
 	}
 

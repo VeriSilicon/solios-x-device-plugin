@@ -98,6 +98,7 @@ typedef struct DriverStatus {
 typedef struct SrmContext {
     SrmDriverStatus *driver_status;
     int driver_nums;
+    float efficiency;
 } SrmContext;
 
 SrmContext *gsrm;
@@ -395,7 +396,7 @@ void srm_close(void)
     free(srm);
 }
 
-int srm_get_total_resource(int type)
+int srm_get_total_resource(int type, float efficiency)
 {
     int i                = 0;
     long avg_dec[12]     = { 0 };
@@ -406,7 +407,12 @@ int srm_get_total_resource(int type)
     int total            = 0;
     SrmContext *srm_avg  = gsrm;
 
-    while (count++ < 400) {
+    if( efficiency == 0 )
+        efficiency = srm_avg->efficiency;
+    else
+        srm_avg->efficiency = efficiency;
+
+    while (count < 201) {
         read_driver_status(srm_avg);
 
         for (i = 0; i < srm_avg->driver_nums; i++) {
@@ -427,15 +433,20 @@ int srm_get_total_resource(int type)
             }
 
             // calculate total
-            status->comp_res.res_480p30  = 96 - 96 * status->enc_usage / 100;
-            status->comp_res.res_720p30  = 36 - 36 * status->enc_usage / 100;
-            status->comp_res.res_1080p30 = 16 - 16 * status->enc_usage / 100;
-            status->comp_res.res_2160p30 = 4 - 4 * status->enc_usage / 100;
+            status->comp_res.res_480p30 =
+                efficiency * (96 - 96 * status->enc_usage / 100);
+            status->comp_res.res_720p30 =
+                efficiency * (36 - 36 * status->enc_usage / 100);
+            status->comp_res.res_1080p30 =
+                efficiency * (16 - 16 * status->enc_usage / 100);
+            status->comp_res.res_2160p30 =
+                efficiency * (4 - 4 * status->enc_usage / 100);
         }
-        usleep(1000);
+        usleep(2000);
+        count++;
     }
 
-    printf("SRM Available Resource[] = ");
+    printf("SRM available resource(efficiency=%0.2f) = ", efficiency);
     for (i = 0; i < srm_avg->driver_nums; i++) {
         SrmTotalSource *driver_res = &srm_avg->driver_status[i].comp_res;
         if (type == SRM_RES_480P) {
@@ -491,8 +502,6 @@ int srm_allocate_resource(int mode, int req_type, int req_nums)
     last_req_nums = req_nums;
     last_time     = cur_time;
 
-    srm_get_total_resource(req_type);
-
     for (i = 0; i < srm->driver_nums; i++) {
         SrmTotalSource *driver_res = &srm->driver_status[i].comp_res;
 
@@ -506,14 +515,10 @@ int srm_allocate_resource(int mode, int req_type, int req_nums)
             available[i] = driver_res->res_2160p30;
         }
 
-        printf("available[%d]=%d, allocated[i]=%d", i, available[i],
-               allocated[i]);
         available[i] -= allocated[i];
 
         if (req_nums > available[i]) {
-            printf(" [out of resources]\n");
         } else {
-            printf("\n");
             if (mode == SRM_BALANCE) {
                 // find the maximum delta for BALABCE mode
                 if (delta < available[i] - req_nums) {
