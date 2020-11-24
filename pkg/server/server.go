@@ -204,7 +204,6 @@ func (s *SoliosServer) listDevice() (int, error) {
 					Health: pluginapi.Healthy,
 				}
 				count++
-				log.Infof("found device '%s'", f.Name())
 			}
 		}
 	} else {
@@ -234,45 +233,22 @@ func (s *SoliosServer) ListAndWatch(e *pluginapi.Empty, srv pluginapi.DevicePlug
 	}
 	srv.Send(&pluginapi.ListAndWatchResponse{Devices: devs})
 
-	//device mode
-	if s.unit == 0 {
-		for {
-			log.Infoln("waiting for device change")
-			select {
-			case <-s.notify:
-				log.Infoln("start to update device list, devices: %d", len(s.devices))
-				devs := make([]*pluginapi.Device, len(s.devices))
-
-				i := 0
-				for _, dev := range s.devices {
-					devs[i] = dev
-					i++
-				}
-				srv.Send(&pluginapi.ListAndWatchResponse{Devices: devs})
-
-			case <-s.ctx.Done():
-				log.Info("ListAndWatch exit")
-				return nil
-			}
+	ticker := time.NewTicker(time.Second * 5)
+	for range ticker.C {
+		count, err := s.listDevice()
+		if err != nil {
+			return fmt.Errorf("listDevice error:%v", err)
 		}
-	} else { //480p/720p/1080p/2160p mode
-		ticker := time.NewTicker(time.Second * 5)
-		for range ticker.C {
-			count, err := s.listDevice()
-			if err != nil {
-				return fmt.Errorf("listDevice error:%v", err)
+		devs := make([]*pluginapi.Device, count)
+		i := 0
+		for i < count {
+			devs[i] = &pluginapi.Device{
+				ID:     strconv.Itoa(i),
+				Health: pluginapi.Healthy,
 			}
-			devs := make([]*pluginapi.Device, count)
-			i := 0
-			for i < count {
-				devs[i] = &pluginapi.Device{
-					ID:     strconv.Itoa(i),
-					Health: pluginapi.Healthy,
-				}
-				i++
-			}
-			srv.Send(&pluginapi.ListAndWatchResponse{Devices: devs})
+			i++
 		}
+		srv.Send(&pluginapi.ListAndWatchResponse{Devices: devs})
 	}
 
 	log.Info("ListAndWatch exit")
@@ -362,12 +338,12 @@ func (s *SoliosServer) watchDevice() error {
 						Health: pluginapi.Healthy,
 					}
 					s.notify <- true
-					log.Infoln("new device find:", event.Name)
+					log.Infoln("new device was found:", event.Name)
 				} else if event.Op&fsnotify.Remove == fsnotify.Remove {
 
 					delete(s.devices, event.Name)
 					s.notify <- true
-					log.Infoln("device deleted:", event.Name)
+					log.Infoln("device was removed:", event.Name)
 				}
 
 			case err, ok := <-w.Errors:
