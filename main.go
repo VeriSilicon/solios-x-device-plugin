@@ -22,9 +22,9 @@ import (
 	"path/filepath"
 	"time"
 
-	solios "github.com/VeriSilicon/solios/pkg/server"
+	"github.com/VeriSilicon/solios-x-device-plugin/pkg/server"
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/fsnotify.v1"
+	"github.com/fsnotify/fsnotify"
 )
 
 func main() {
@@ -39,7 +39,7 @@ func main() {
 	fmt.Println("-priority", *priority)
 	fmt.Println("-efficiency", *efficiency)
 
-	soliosSrv := solios.NewSoliosServer()
+	soliosSrv := server.NewSoliosServer()
 	go soliosSrv.Run(*unit, *priority, *efficiency)
 
 	if err := soliosSrv.RegisterToKubelet(); err != nil {
@@ -48,7 +48,7 @@ func main() {
 		log.Infoln("register to kubelet successfully")
 	}
 
-	devicePluginSocket := filepath.Join(solios.DEVICE_PLUG_PATH, solios.KUBELET_SOCKET)
+	devicePluginSocket := filepath.Join(server.DEVICE_PLUG_PATH, server.KUBELET_SOCKET)
 	log.Info("device plugin socket name:", devicePluginSocket)
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -57,7 +57,7 @@ func main() {
 	}
 
 	defer watcher.Close()
-	err = watcher.Add(solios.DEVICE_PLUG_PATH)
+	err = watcher.Add(server.DEVICE_PLUG_PATH)
 	if err != nil {
 		log.Error("watch kubelet error")
 		return

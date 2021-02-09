@@ -1,4 +1,4 @@
-module github.com/VeriSilicon/solios
+module github.com/VeriSilicon/solios-x-device-plugin
 
 go 1.13
 
@@ -26,13 +26,14 @@ replace (
 )
 
 require (
-	github.com/fsnotify/fsnotify v1.4.7
+	github.com/fsnotify/fsnotify v1.4.9
 	github.com/golang/protobuf v1.3.5 // indirect
 	github.com/rogpeppe/godef v1.1.2 // indirect
-	github.com/sirupsen/logrus v1.2.0
+	github.com/sirupsen/logrus v1.7.0
 	github.com/uudashr/gopkgs/v2 v2.1.2 // indirect
 	golang.org/x/tools v0.0.0-20200813231717-0a73ddcff9b8 // indirect
 	google.golang.org/grpc v1.28.0
-	gopkg.in/fsnotify.v1 v1.4.7
+	k8s.io/api v0.20.2 // indirect
 	k8s.io/kubernetes v1.15.5
+
 )
