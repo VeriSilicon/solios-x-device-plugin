@@ -78,7 +78,7 @@ Capacity:
 ## Testing the plugin by Deployment
 
 ```bash
-$ kubectl apply -f https://raw.githubusercontent.com/VeriSilicon/solios-x-device-plugin/master/deployments/solios-x-test-deployment-csd.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/VeriSilicon/solios-x-device-plugin/master/deployments/solios-x-test-deployment.yaml
 ```
 In this sample YAML file, 5 Solios-X cards will be used hence 5 pods will be created. If you don't have 10 cards installed on your server, please change [replicas] value.
 The sample pod will select one /dev/transcoder device and do H264->H264 transcoding job repeatedly.
@@ -137,14 +137,14 @@ frame=  300 fps=175 q=-0.0 Lsize=   12020kB time=00:00:09.74 bitrate=10106.9kbit
 
 Delete the Deployment:
 ```bash
-$kubectl delete -f https://raw.githubusercontent.com/VeriSilicon/solios-x-device-plugin/master/deployments/solios-x-test-deployment-csd.yaml
+$kubectl delete -f https://raw.githubusercontent.com/VeriSilicon/solios-x-device-plugin/master/deployments/solios-x-test-deployment.yaml
 deployment.apps "solios-test-deployment" deleted
 ```
 
 ## Or Testing the plugin by Pod
 
 ```bash
-$ kubectl apply -f https://raw.githubusercontent.com/VeriSilicon/solios-x-device-plugin/master/deployments/solios-x-test-pod-csd.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/VeriSilicon/solios-x-device-plugin/master/deployments/solios-x-test-pod.yaml
 ```
 In this sample YAML file, 1 Solios-X cards will be used hence one 1 pods will be created.
 The sample pod will select one /dev/transcoder device and do H264->H264 transcoding job repeatedly.
@@ -212,8 +212,8 @@ Round 1 finished, now start next...
 ```
 Delete the Pod:
 ```bash
-$kubectl delete -f https://raw.githubusercontent.com/VeriSilicon/solios-x-device-plugin/master/deployments/solios-x-test-pod-csd.yaml
-deployment.apps "solios-test-pod-csd" deleted
+$kubectl delete -f https://raw.githubusercontent.com/VeriSilicon/solios-x-device-plugin/master/deployments/solios-x-test-pod.yaml
+deployment.apps "solios-test-pod" deleted
 ```
 
 # More Configurations
